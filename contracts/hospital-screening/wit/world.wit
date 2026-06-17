@@ -1,0 +1,22 @@
+package z:tenant-patient-screening@0.1.0;
+
+world patient-screening {
+  import host:tenant/tenant-context@1.0.0;
+  import host:interfaces/logging@2.1.0;
+  import host:interfaces/kv-store@2.1.0;
+  import host:interfaces/http@2.1.0;
+  import host:interfaces/http-with-placeholders@2.1.0;
+
+  export contracts;
+}
+
+interface contracts {
+  record generic-input {
+    input:        option<list<u8>>,
+    user-profile: option<list<u8>>,
+    context:      option<list<u8>>,
+  }
+
+  check-eligibility: func(req: generic-input) -> result<list<u8>, string>;
+  get-patient-profile-fields: func(req: generic-input) -> result<list<u8>, string>;
+}

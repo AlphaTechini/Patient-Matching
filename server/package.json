@@ -1,0 +1,30 @@
+{
+  "name": "trialmatch-server",
+  "version": "0.1.0",
+  "description": "TEE-governed clinical trial patient matching on Terminal 3 Network",
+  "type": "module",
+  "scripts": {
+    "setup": "tsx src/scripts/setup.ts",
+    "authorize": "tsx src/scripts/authorize.ts",
+    "invoke": "tsx src/scripts/invoke.ts",
+    "build:pharma": "cd ../contracts/pharma-trial && cargo build --target wasm32-wasip2 --release",
+    "build:hospital": "cd ../contracts/hospital-screening && cargo build --target wasm32-wasip2 --release",
+    "build:all": "pnpm build:pharma && pnpm build:hospital"
+  },
+  "keywords": ["terminal3", "tee", "clinical-trials", "patient-matching", "confidential-computing"],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.7.0",
+      "onFail": "download"
+    }
+  },
+  "dependencies": {
+    "@terminal3/t3n-sdk": "^3.6.0",
+    "@types/node": "^25.9.3",
+    "tsx": "^4.19.2",
+    "typescript": "^6.0.3"
+  }
+}

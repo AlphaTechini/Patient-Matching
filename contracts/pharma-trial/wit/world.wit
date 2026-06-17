@@ -1,0 +1,21 @@
+package z:tenant-trial-matching@0.1.0;
+
+world trial-matching {
+  import host:tenant/tenant-context@1.0.0;
+  import host:interfaces/logging@2.1.0;
+  import host:interfaces/kv-store@2.1.0;
+
+  export contracts;
+}
+
+interface contracts {
+  record generic-input {
+    input:        option<list<u8>>,
+    user-profile: option<list<u8>>,
+    context:      option<list<u8>>,
+  }
+
+  publish-trial: func(req: generic-input) -> result<list<u8>, string>;
+  get-trial-criteria: func(req: generic-input) -> result<list<u8>, string>;
+  submit-match-result: func(req: generic-input) -> result<list<u8>, string>;
+}

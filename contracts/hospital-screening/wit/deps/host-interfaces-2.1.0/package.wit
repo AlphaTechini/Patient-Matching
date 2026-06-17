@@ -1,0 +1,82 @@
+// Held at @2.1.0 deliberately so existing contracts (user / vc /
+// agent-registry / organisation / payroll), all pinned to @2.1.0
+// in their per-contract wit/deps copies, continue to link against
+// the host runtime.
+package host:interfaces@2.1.0;
+
+interface http {
+  enum verb {
+    get,
+    post,
+    put,
+    patch,
+    delete
+  }
+
+  record request {
+    method: verb,
+    url: string,
+    headers: option<list<tuple<string, string>>>,
+    payload: option<list<u8>>
+  }
+
+  record response {
+    code: u16,
+    payload: list<u8>
+  }
+
+  call: func(request: request) -> result<response, string>;
+}
+
+/// MAT-1627 — PII-safe HTTP for tenant contracts (T3-TS-029 §6.2).
+interface http-with-placeholders {
+  enum verb {
+    get,
+    post,
+    put,
+    patch,
+    delete
+  }
+
+  record request {
+    method: verb,
+    url: string,
+    headers: option<list<tuple<string, string>>>,
+    payload: option<list<u8>>
+  }
+
+  record response {
+    code: u16,
+    payload: list<u8>
+  }
+
+  variant http-error {
+    egress-denied(string),
+    placeholder-denied(string),
+    placeholder-unknown(string),
+    placeholder-no-user-context,
+    upstream-error(string),
+  }
+
+  call: func(request: request) -> result<response, http-error>;
+}
+
+interface logging {
+  info: func(message: string) -> result<_, string>;
+  debug: func(message: string) -> result<_, string>;
+  error: func(message: string) -> result<_, string>;
+}
+
+/// Key-value store for CCF-backed contract state.
+interface kv-store {
+    get: func(map-name: string, key: list<u8>) -> result<option<list<u8>>, string>;
+    put: func(map-name: string, key: list<u8>, value: list<u8>) -> result<_, string>;
+    delete: func(map-name: string, key: list<u8>) -> result<bool, string>;
+    set-claims-digest: func(digest: list<u8>) -> result<_, string>;
+    scan: func(
+        map-name: string,
+        start: list<u8>,
+        end: list<u8>,
+        limit: u32,
+    ) -> result<list<tuple<list<u8>, list<u8>>>, string>;
+}
