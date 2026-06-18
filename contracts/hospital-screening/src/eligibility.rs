@@ -5,13 +5,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 struct CheckEligibilityInput {
     trial_id: String,
-    patient_id: String,
 }
 
 #[derive(Serialize)]
 struct EligibilityResult {
     trial_id: String,
-    patient_id: String,
     eligible: bool,
     confidence: f64,
     matched_criteria: u32,
@@ -124,16 +122,17 @@ pub fn check_eligibility(input_bytes: &[u8]) -> Result<Vec<u8>, String> {
     let criteria: TrialCriteria = serde_json::from_slice(&criteria_bytes)
         .map_err(|e| format!("check-eligibility: deserialize criteria: {e}"))?;
 
-    let _ = logging::info(&format!("evaluating patient {} against trial {}", input.patient_id, input.trial_id));
+    let _ = logging::info(&format!("evaluating patient against trial {}", input.trial_id));
 
     // 2. Fetch patient data from hospital EHR via http-with-placeholders
-    //    PII markers resolved host-side — never enter WASM memory
+    //    {{profile.patient_id}} resolved host-side inside TDX enclave;
+    //    the resolved value never enters WASM guest memory.
     let api_key = get_api_key()?;
     let ehr_base = "https://ehr.hospital-system.com";
 
     let ehr_resp = hwp::call(&hwp::Request {
         method: hwp::Verb::Get,
-        url: format!("{ehr_base}/api/v1/patients/{}/records", input.patient_id),
+        url: format!("{ehr_base}/api/v1/patients/{{{{profile.patient_id}}}}/records"),
         headers: Some(duffel_headers(&api_key)),
         payload: None,
     }).map_err(|e| format!("check-eligibility: ehr call: {}", format_http_error(e)))?;
@@ -150,14 +149,13 @@ pub fn check_eligibility(input_bytes: &[u8]) -> Result<Vec<u8>, String> {
     let (eligible, confidence, matched, total, failed) = evaluate_criteria(&criteria, &patient_data);
 
     let _ = logging::info(&format!(
-        "eligibility: trial={} patient={} eligible={} confidence={:.2} matched={}/{}",
-        input.trial_id, input.patient_id, eligible, confidence, matched, total
+        "eligibility: trial={} eligible={} confidence={:.2} matched={}/{}",
+        input.trial_id, eligible, confidence, matched, total
     ));
 
     // 4. Return match result — NOT raw patient data
     let output = EligibilityResult {
         trial_id: input.trial_id,
-        patient_id: input.patient_id,
         eligible,
         confidence,
         matched_criteria: matched,

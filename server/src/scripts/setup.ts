@@ -13,9 +13,14 @@ import { readFile } from "fs/promises";
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const T3N_API_KEY = process.env.T3N_API_KEY!;
-const EHR_API_KEY = process.env.EHR_API_KEY!;
-const TRIALS_API_KEY = process.env.TRIALS_API_KEY!;
+const T3N_API_KEY = process.env.T3N_API_KEY;
+const EHR_API_KEY = process.env.EHR_API_KEY;
+const TRIALS_API_KEY = process.env.TRIALS_API_KEY;
+
+if (!T3N_API_KEY || !EHR_API_KEY || !TRIALS_API_KEY) {
+  console.error("Missing required env vars: T3N_API_KEY, EHR_API_KEY, TRIALS_API_KEY");
+  process.exit(1);
+}
 
 // ─── Contract paths ─────────────────────────────────────────────────────────
 const PHARMA_WASM_PATH = "../contracts/pharma-trial/target/wasm32-wasip2/release/z_tenant_trial_matching.wasm";

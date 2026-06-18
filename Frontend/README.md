@@ -1,42 +1,19 @@
-# sv
+# TrialMatch Frontend
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+SvelteKit web UI for the TrialMatch patient-to-trial matching dashboard.
 
-## Creating a project
+## Architecture
 
-If you're seeing this, you've probably already done this step. Congrats!
+- **Entry layout**: [`src/routes/+layout.svelte`](src/routes/+layout.svelte) loads Tailwind CSS and renders the page shell.
+- **Main dashboard**: [`src/routes/+page.svelte`](src/routes/+page.svelte) includes the search form, eligibility results, and explanation UI.
+- **API base URL**: [`src/lib/config.ts`](src/lib/config.ts) reads `VITE_API_BASE` from the environment. It defaults to the empty string (`''`) which assumes same-origin in production, and is overridden to `http://localhost:3000` in development via `.env`.
 
-```sh
-# create a new project
-npx sv create my-app
+## Running
+
+```bash
+pnpm install
+pnpm dev      # http://localhost:5173
+pnpm build    # production build via @sveltejs/adapter-vercel
 ```
 
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-pnpm dlx sv@0.16.1 create --template minimal --types ts --add prettier eslint tailwindcss="plugins:typography,forms" mcp="ide:opencode" --install pnpm Frontend
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+The backend server must be running on `localhost:3000` for the frontend to reach `/api/match`, `/api/explain`, and `/api/trials`.

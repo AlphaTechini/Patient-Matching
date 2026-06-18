@@ -12,7 +12,12 @@ import {
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const AGENT_KEY = process.env.AGENT_KEY!;
+const AGENT_KEY = process.env.AGENT_KEY;
+
+if (!AGENT_KEY || !PHARMA_TENANT_DID || !HOSPITAL_TENANT_DID) {
+  console.error("Missing required env vars: AGENT_KEY, PHARMA_TENANT_DID, HOSPITAL_TENANT_DID");
+  process.exit(1);
+}
 
 // ─── Contract references (must match setup.ts values) ───────────────────────
 const PHARMA_CONTRACT_TAIL = "trial-matching";
@@ -24,7 +29,8 @@ const HOSPITAL_TENANT_DID = process.env.HOSPITAL_TENANT_DID!;
 
 // ─── Test data ───────────────────────────────────────────────────────────────
 const TEST_TRIAL_ID = "TRIAL-2026-001";
-const TEST_PATIENT_ID = "PAT-12345";
+const TEST_PATIENT_DID = process.env.TEST_PATIENT_DID || "did:t3n:patient-001";
+const TEST_PATIENT_ID = process.env.TEST_PATIENT_ID || "PAT-12345";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function createAgentClient(agentKey: string): Promise<T3nClient> {
@@ -60,7 +66,7 @@ async function main() {
   console.log(`  pharma script: ${pharmaScriptName}`);
   console.log(`  hospital script: ${hospitalScriptName}`);
   console.log(`  trial ID: ${TEST_TRIAL_ID}`);
-  console.log(`  patient ID: ${TEST_PATIENT_ID}\n`);
+  console.log(`  patient DID: ${TEST_PATIENT_DID}\n`);
 
   // ── Step 1: Get trial criteria from pharma contract ──────────────────────
   console.log("── Step 1: Fetch trial criteria ──");
@@ -85,10 +91,8 @@ async function main() {
     script_name: hospitalScriptName,
     script_version: hospitalVersion,
     function_name: "check-eligibility",
-    input: {
-      trial_id: TEST_TRIAL_ID,
-      patient_id: TEST_PATIENT_ID,
-    },
+    input: { trial_id: TEST_TRIAL_ID },
+    pii_did: TEST_PATIENT_DID,
   }) as { eligible: boolean; confidence: number; matched_criteria: number; total_criteria: number };
 
   console.log("  Eligibility result:");

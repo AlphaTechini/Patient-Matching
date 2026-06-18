@@ -9,6 +9,7 @@ struct ProfileFieldsOutput {
 
 pub fn get_patient_profile_fields(_input_bytes: &[u8]) -> Result<Vec<u8>, String> {
     let fields = vec![
+        "patient_id".to_string(),
         "first_name".to_string(),
         "last_name".to_string(),
         "date_of_birth".to_string(),

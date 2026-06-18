@@ -1,3 +1,6 @@
+packages:
+  - server
+  - Frontend
 allowBuilds:
-  esbuild: true
-  '@tailwindcss/oxide': true
+  '@tailwindcss/oxide': set this to true or false
+  esbuild: set this to true or false

@@ -4,14 +4,24 @@
   "description": "TEE-governed clinical trial patient matching on Terminal 3 Network",
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "setup": "tsx src/scripts/setup.ts",
     "authorize": "tsx src/scripts/authorize.ts",
     "invoke": "tsx src/scripts/invoke.ts",
     "build:pharma": "cd ../contracts/pharma-trial && cargo build --target wasm32-wasip2 --release",
     "build:hospital": "cd ../contracts/hospital-screening && cargo build --target wasm32-wasip2 --release",
-    "build:all": "pnpm build:pharma && pnpm build:hospital"
+    "build:all": "pnpm build:pharma && pnpm build:hospital",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
-  "keywords": ["terminal3", "tee", "clinical-trials", "patient-matching", "confidential-computing"],
+  "keywords": [
+    "terminal3",
+    "tee",
+    "clinical-trials",
+    "patient-matching",
+    "confidential-computing"
+  ],
   "author": "",
   "license": "ISC",
   "devEngines": {
@@ -22,9 +32,18 @@
     }
   },
   "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/env": "^7.0.0",
+    "@google/generative-ai": "^0.24.1",
     "@terminal3/t3n-sdk": "^3.6.0",
     "@types/node": "^25.9.3",
+    "fastify": "^5.8.5",
+    "groq-sdk": "^1.2.1",
     "tsx": "^4.19.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.9"
   }
 }

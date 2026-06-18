@@ -85,52 +85,7 @@ Full solution architecture: [Solution.md](Solution.md)
 
 ## Project Structure
 
-```
-trialmatch/
-├── contracts/                     # TEE contracts (Rust/WASM)
-│   ├── pharma-trial/              # Pharma sponsor's contract
-│   │   ├── src/
-│   │   │   ├── lib.rs             # wit-bindgen entry + dispatch
-│   │   │   ├── publish.rs         # publish-trial
-│   │   │   ├── criteria.rs        # get-trial-criteria
-│   │   │   └── results.rs         # submit-match-result
-│   │   ├── wit/
-│   │   │   ├── world.wit          # WIT interface definition
-│   │   │   └── deps/              # Vendored host interfaces
-│   │   └── Cargo.toml
-│   │
-│   └── hospital-screening/        # Hospital's contract
-│       ├── src/
-│       │   ├── lib.rs             # wit-bindgen entry + dispatch
-│       │   ├── eligibility.rs     # check-eligibility (PII-safe via placeholders)
-│       │   └── profile.rs         # get-patient-profile-fields
-│       ├── wit/
-│       │   ├── world.wit          # WIT interface definition
-│       │   └── deps/              # Vendored host interfaces
-│       └── Cargo.toml
-│
-├── server/                        # Agent backend (Node.js + TypeScript)
-│   ├── .gitignore
-│   ├── src/
-│   │   └── scripts/
-│   │       ├── setup.ts           # Tenant onboarding, contract registration, KV maps, secrets
-│   │       ├── authorize.ts       # Patient grant (agent-auth-update)
-│   │       └── invoke.ts          # Agent invokes matching, records results
-│   ├── .env                       # Environment variables (API keys)
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
-│
-├── Frontend/                      # Web UI (SvelteKit)
-│
-├── README.md
-├── Problem-statement.md           # Research, statistics, competitive landscape
-├── Solution.md                    # Full architecture and ADK capability mapping
-├── Resources.md                   # Terminal 3 documentation links
-├── package.json
-├── tsconfig.json
-└── .env.example
-```
+See [`structure.md`](structure.md) for a full directory map and logic locator.
 
 ---
 
@@ -237,10 +192,37 @@ After `setup` completes, copy the output `PHARMA_TENANT_DID` and `HOSPITAL_TENAN
 
 ---
 
+## Run Locally
+
+The server automatically falls back to a `MockTEEClient` when T3N credentials are missing, so you can develop and demo without testnet keys.
+
+### Backend
+
+```bash
+cd server
+pnpm install
+pnpm dev           # http://localhost:3008
+pnpm test          # vitest with mocks
+```
+
+### Frontend
+
+```bash
+cd Frontend
+pnpm install
+pnpm dev           # http://localhost:5173
+```
+
+In a separate terminal, start the backend first so the frontend can call `http://localhost:3000/api/*`.
+
+---
+
 ## Documentation
 
+- [Project Structure](structure.md) — Directory map and file locator
+- [Server README](server/README.md) — Backend architecture, routes, and runbook
 - [Problem Statement](Problem-statement.md) — Research, statistics, competitive landscape
-- [Solution Architecture](Solution.md) — Full technical design and ADK mapping
+- [Solution Architecture](Solution.md) — Full technical design and ADK capability mapping
 - [Terminal 3 ADK Docs](https://docs.terminal3.io/developers/adk/overview/what-is-adk)
 - [Agentic AI Security Manifesto](https://blog.terminal3.io/the-agentic-ai-security-governance-manifesto/)
 

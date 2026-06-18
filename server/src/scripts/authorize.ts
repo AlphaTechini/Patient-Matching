@@ -12,8 +12,13 @@ import {
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const T3N_API_KEY = process.env.T3N_API_KEY!;
-const AGENT_KEY = process.env.AGENT_KEY!;
+const T3N_API_KEY = process.env.T3N_API_KEY;
+const AGENT_KEY = process.env.AGENT_KEY;
+
+if (!T3N_API_KEY || !AGENT_KEY) {
+  console.error("Missing required env vars: T3N_API_KEY, AGENT_KEY");
+  process.exit(1);
+}
 
 // ─── Contract references (must match setup.ts values) ───────────────────────
 const PHARMA_CONTRACT_TAIL = "trial-matching";
