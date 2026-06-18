@@ -1,202 +1,87 @@
 <script lang="ts">
-	import { API_BASE } from '$lib/config';
-
-	let query = $state('lung cancer immunotherapy phase III');
-	let patientDid = $state('did:t3n:patient-001');
-	let loading = $state(false);
-	let error = $state('');
-	let results = $state<any[]>([]);
-	let summary = $state('');
-	let explanation = $state('');
-	let explainingFor = $state('');
-
-	const patients = [
-		{ did: 'did:t3n:patient-001', label: 'Patient 001 (Eligible)' },
-		{ did: 'did:t3n:patient-002', label: 'Patient 002 (Peanut allergy exclusion)' },
-		{ did: 'did:t3n:patient-003', label: 'Patient 003 (Warfarin exclusion)' },
-	];
-
-	async function handleMatch() {
-		loading = true;
-		error = '';
-		results = [];
-		summary = '';
-		explanation = '';
-		explainingFor = '';
-		try {
-			const res = await fetch(`${API_BASE}/api/match`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query, patientDid }),
-			});
-			if (!res.ok) throw new Error(await res.text());
-			const data = await res.json();
-			results = data.results ?? [];
-			summary = data.summary ?? '';
-		} catch (e: any) {
-			error = e.message || 'Request failed';
-		} finally {
-			loading = false;
-		}
-	}
-
-	async function handleExplain(trialId: string, eligibility: any) {
-		explainingFor = trialId;
-		explanation = '';
-		try {
-			const res = await fetch(`${API_BASE}/api/explain`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ trialId, eligibilityResult: eligibility }),
-			});
-			if (!res.ok) throw new Error(await res.text());
-			const data = await res.json();
-			explanation = data.explanation;
-		} catch (e: any) {
-			explanation = `Error: ${e.message}`;
-		}
-	}
-
-	async function handleRecommend() {
-		loading = true;
-		error = '';
-		results = [];
-		summary = '';
-		explanation = '';
-		explainingFor = '';
-		try {
-			const res = await fetch(`${API_BASE}/api/trials?patientDid=${encodeURIComponent(patientDid)}`);
-			if (!res.ok) throw new Error(await res.text());
-			const data = await res.json();
-			// Rankings are IDs; create lightweight result items
-			results = (data.trials ?? []).map((id: string) => ({
-				trial: { id, name: `Trial ${id}` },
-				eligibility: { eligible: true, confidence: 1, matched_criteria: 0, total_criteria: 0, failed_criteria: [] }
-			}));
-			summary = `Top trial recommendations for ${patientDid}`;
-		} catch (e: any) {
-			error = e.message || 'Request failed';
-		} finally {
-			loading = false;
-		}
-	}
+	import MarketingNav from '$lib/components/MarketingNav.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 </script>
 
-<div class="min-h-screen bg-slate-50 text-slate-800">
-	<header class="border-b bg-white">
-		<div class="mx-auto max-w-5xl px-6 py-6">
-			<h1 class="text-2xl font-bold text-slate-900">TrialMatch</h1>
-			<p class="text-sm text-slate-500">TEE-governed clinical trial patient matching</p>
-		</div>
-	</header>
+<div class="bg-[var(--color-tm-base)] min-h-screen font-body-md text-on-surface">
+	<MarketingNav />
 
-	<main class="mx-auto max-w-5xl px-6 py-8">
-		<section class="rounded-xl border bg-white p-6 shadow-sm">
-			<div class="grid gap-4 sm:grid-cols-3">
-				<div class="sm:col-span-2">
-					<label class="block text-sm font-medium text-slate-700" for="query">Search query</label>
-					<input
-						id="query"
-						bind:value={query}
-						class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-						placeholder="e.g. lung cancer immunotherapy phase III"
-					/>
+	<main class="pt-20">
+		<!-- Hero Section -->
+		<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-grid-pattern">
+			<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[var(--color-tm-cyan)]/10 via-[var(--color-tm-base)] to-[var(--color-tm-base)] opacity-50"></div>
+			
+			<div class="relative z-10 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop text-center mt-[-10vh]">
+				<div class="inline-flex items-center space-x-2 bg-surface-container border border-[var(--color-tm-border)] rounded-full px-4 py-1.5 mb-8 inner-glow">
+					<span class="w-2 h-2 rounded-full bg-[var(--color-tm-success)] animate-pulse-slow"></span>
+					<span class="text-label-sm text-on-surface-variant font-mono-data tracking-wide uppercase">TEE Network Live &bull; 14 Nodes</span>
 				</div>
-				<div>
-					<label class="block text-sm font-medium text-slate-700" for="patient">Patient DID</label>
-					<select
-						id="patient"
-						bind:value={patientDid}
-						class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-					>
-						{#each patients as p}
-							<option value={p.did}>{p.label}</option>
-						{/each}
-					</select>
+				
+				<h1 class="text-display-xl md:text-[72px] font-bold text-on-surface mb-6 leading-tight tracking-tight text-glow max-w-4xl mx-auto">
+					Zero-Knowledge.<br />
+					<span class="text-primary">100% Clinical Match.</span>
+				</h1>
+				
+				<p class="text-body-lg text-on-surface-variant max-w-2xl mx-auto mb-10 leading-relaxed">
+					TrialMatch uses Trusted Execution Environments (TEEs) to cross-reference your genomic and clinical data with active trials—without ever exposing your raw data to anyone. Not even us.
+				</p>
+				
+				<div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+					<a href="/login" class="btn-primary w-full sm:w-auto text-body-md py-3 px-8">
+						Enter Patient Portal
+						<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+					</a>
+					<a href="/login" class="btn-ghost w-full sm:w-auto text-body-md py-3 px-8">
+						For Institutions
+					</a>
 				</div>
 			</div>
-			<div class="mt-4 flex flex-wrap gap-3">
-				<button
-					onclick={handleMatch}
-					disabled={loading}
-					class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-				>
-					{loading ? 'Matching...' : 'Match Trials'}
-				</button>
-				<button
-					onclick={handleRecommend}
-					disabled={loading}
-					class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
-				>
-					{loading ? 'Loading...' : 'Recommend Trials'}
-				</button>
-			</div>
-			{#if error}
-				<p class="mt-3 text-sm text-red-600">{error}</p>
-			{/if}
 		</section>
 
-		{#if summary}
-			<section class="mt-6 rounded-xl border bg-white p-6 shadow-sm">
-				<h2 class="text-lg font-semibold text-slate-900">Summary</h2>
-				<p class="mt-2 text-sm leading-relaxed text-slate-700">{summary}</p>
-			</section>
-		{/if}
+		<!-- Trust Band -->
+		<section class="border-y border-[var(--color-tm-border)] bg-surface py-6">
+			<div class="max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop flex flex-wrap justify-center gap-8 md:gap-16 opacity-70 grayscale">
+				<div class="text-headline-md font-bold text-on-surface">Mayo Clinic</div>
+				<div class="text-headline-md font-bold text-on-surface">UCSF Health</div>
+				<div class="text-headline-md font-bold text-on-surface">Dana-Farber</div>
+				<div class="text-headline-md font-bold text-on-surface">GenoPharma</div>
+			</div>
+		</section>
 
-		{#if results.length > 0}
-			<section class="mt-6">
-				<h2 class="mb-3 text-lg font-semibold text-slate-900">Results</h2>
-				<div class="grid gap-4">
-					{#each results as r}
-						<div class="rounded-xl border bg-white p-5 shadow-sm">
-							<div class="flex items-start justify-between gap-4">
-								<div>
-									<h3 class="text-base font-semibold text-slate-900">{r.trial.name}</h3>
-									<p class="text-sm text-slate-500">ID: {r.trial.id}</p>
-								</div>
-								{#if r.eligibility.eligible}
-									<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700">Eligible</span>
-								{:else}
-									<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">Not Eligible</span>
-								{/if}
-							</div>
-							<div class="mt-3">
-								<div class="text-sm text-slate-700">
-									Confidence: <span class="font-medium">{Math.round((r.eligibility.confidence || 0) * 100)}%</span>
-									<span class="ml-2 text-slate-400">·</span>
-									<span class="ml-2">{r.eligibility.matched_criteria}/{r.eligibility.total_criteria} criteria matched</span>
-								</div>
-								{#if r.eligibility.failed_criteria?.length > 0}
-									<div class="mt-2 text-sm text-red-700">
-										Failed: {r.eligibility.failed_criteria.join(', ')}
-									</div>
-								{/if}
-							</div>
-							<div class="mt-4">
-								<button
-									onclick={() => handleExplain(r.trial.id, r.eligibility)}
-									class="text-sm font-medium text-blue-600 hover:text-blue-700"
-								>
-									Explain result
-								</button>
-								{#if explainingFor === r.trial.id}
-									<div class="mt-2 rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-slate-700">
-										{#if explanation}
-											{explanation}
-										{:else}
-											Loading explanation...
-										{/if}
-									</div>
-								{/if}
-							</div>
-						</div>
-					{/each}
+		<!-- Features Grid -->
+		<section id="privacy" class="py-24 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
+			<div class="text-center mb-16">
+				<h2 class="text-headline-lg font-bold text-primary mb-4 text-glow">Cryptographically Guaranteed Privacy</h2>
+				<p class="text-body-lg text-on-surface-variant max-w-2xl mx-auto">Traditional matching requires handing over your data. TrialMatch reverses the paradigm by bringing the algorithm to your encrypted data.</p>
+			</div>
+			
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+				<div class="glass-panel p-8 rounded-xl hover:border-primary/50 transition-colors">
+					<div class="w-12 h-12 rounded-lg bg-primary-container/10 border border-primary/20 flex items-center justify-center mb-6 inner-glow">
+						<span class="material-symbols-outlined text-primary text-[28px]">shield_locked</span>
+					</div>
+					<h3 class="text-headline-md font-bold text-on-surface mb-3">Hardware Enclaves</h3>
+					<p class="text-body-md text-on-surface-variant">Data is processed inside secure TEEs (like Intel SGX). Even the physical server owner cannot see the data inside the enclave.</p>
 				</div>
-			</section>
-		{/if}
+				
+				<div class="glass-panel p-8 rounded-xl hover:border-primary/50 transition-colors">
+					<div class="w-12 h-12 rounded-lg bg-primary-container/10 border border-primary/20 flex items-center justify-center mb-6 inner-glow">
+						<span class="material-symbols-outlined text-primary text-[28px]">hub</span>
+					</div>
+					<h3 class="text-headline-md font-bold text-on-surface mb-3">Decentralized Identity</h3>
+					<p class="text-body-md text-on-surface-variant">Your identity is managed via DIDs on our clinical ledger. No usernames, no passwords, just cryptographic proofs.</p>
+				</div>
+				
+				<div class="glass-panel p-8 rounded-xl hover:border-primary/50 transition-colors">
+					<div class="w-12 h-12 rounded-lg bg-primary-container/10 border border-primary/20 flex items-center justify-center mb-6 inner-glow">
+						<span class="material-symbols-outlined text-primary text-[28px]">policy</span>
+					</div>
+					<h3 class="text-headline-md font-bold text-on-surface mb-3">Granular Consent</h3>
+					<p class="text-body-md text-on-surface-variant">You control exactly which hospital or pharma company can decrypt your contact info, only after a mathematical match is verified.</p>
+				</div>
+			</div>
+		</section>
 	</main>
 
-	<footer class="mx-auto max-w-5xl px-6 py-8 text-center text-xs text-slate-400">
-		TEE-governed matching · Patient PII never leaves the enclave
-	</footer>
+	<Footer />
 </div>

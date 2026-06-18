@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Publish a New Trial - ClinicalOS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;family=Space+Grotesk:wght@600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface-variant": "#bbc9cd",
+                        "error-container": "#93000a",
+                        "on-surface": "#dde4e5",
+                        "tertiary-fixed-dim": "#ffb957",
+                        "on-tertiary": "#462b00",
+                        "on-primary": "#00363e",
+                        "primary-container": "#22d3ee",
+                        "secondary-fixed": "#e0e0ff",
+                        "tertiary": "#ffd6a3",
+                        "on-secondary-fixed": "#000767",
+                        "primary": "#8aebff",
+                        "secondary-fixed-dim": "#bdc2ff",
+                        "inverse-surface": "#dde4e5",
+                        "surface-bright": "#343a3c",
+                        "background": "#0e1416",
+                        "surface-container-highest": "#2f3638",
+                        "surface-container": "#1a2122",
+                        "on-secondary-container": "#a8afff",
+                        "on-primary-fixed": "#001f25",
+                        "surface-container-low": "#161d1e",
+                        "on-tertiary-fixed-variant": "#643f00",
+                        "inverse-on-surface": "#2b3233",
+                        "primary-fixed": "#a2eeff",
+                        "on-tertiary-container": "#6e4600",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb5",
+                        "on-error": "#690005",
+                        "surface-tint": "#2fd9f4",
+                        "on-tertiary-fixed": "#2a1800",
+                        "on-secondary-fixed-variant": "#2f3aa3",
+                        "on-secondary": "#131e8c",
+                        "surface-dim": "#0e1416",
+                        "outline-variant": "#3c494c",
+                        "surface-container-high": "#242b2d",
+                        "surface": "#0e1416",
+                        "tertiary-container": "#ffb13b",
+                        "surface-variant": "#2f3638",
+                        "outline": "#859397",
+                        "on-primary-fixed-variant": "#004e5a",
+                        "secondary-container": "#2f3aa3",
+                        "primary-fixed-dim": "#2fd9f4",
+                        "secondary": "#bdc2ff",
+                        "surface-container-lowest": "#090f11",
+                        "on-background": "#dde4e5",
+                        "inverse-primary": "#006877",
+                        "on-primary-container": "#005763",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "margin-mobile": "16px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "container-max": "1280px",
+                        "stack-sm": "8px",
+                        "gutter": "24px",
+                        "margin-desktop": "32px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["JetBrains Mono"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Space Grotesk"],
+                        "display-xl": ["Space Grotesk"],
+                        "headline-lg": ["Space Grotesk"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-data": ["13px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "display-xl": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0e1416;
+            color: #dde4e5;
+        }
+        .inset-shadow-cyan {
+            box-shadow: inset 0 1px 0 rgba(34, 211, 238, 0.06);
+        }
+        .focus-glow:focus-within {
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+            border-color: #22d3ee;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0e1416;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2f3638;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3c494c;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden min-h-screen flex">
+<!-- SideNavBar (Shared Component) -->
+<!-- The prompt says: "My Trials active" -->
+<nav class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline-md text-headline-md font-body-md text-body-md font-label-md text-label-md fixed left-0 top-0 h-full w-64 border-r border-outline-variant dark:border-outline-variant shadow-sm inset-shadow-cyan flex flex-col h-full p-4 gap-stack-lg z-50 hidden md:flex">
+<!-- Header -->
+<div class="flex items-center gap-3 mb-stack-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-primary">science</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md font-bold text-on-surface dark:text-on-surface text-lg leading-tight">GenoPharma Inc.</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">TEE Secured Instance</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-2 px-4 rounded-lg flex items-center justify-center gap-2 mb-stack-lg hover:bg-primary transition-colors duration-200">
+<span class="material-symbols-outlined text-sm">add</span>
+            New Trial Protocol
+        </button>
+<!-- Navigation Tabs -->
+<div class="flex flex-col gap-2 flex-grow">
+<!-- Active Tab: My Trials -->
+<a class="flex items-center gap-3 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-lg font-semibold scale-95 transition-transform hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">clinical_notes</span>
+<span class="font-label-md text-label-md">My Trials</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dataset_linked</span>
+<span class="font-label-md text-label-md">Match Results</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">history_edu</span>
+<span class="font-label-md text-label-md">Audit Log</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+<!-- Footer Tab -->
+<div class="mt-auto border-t border-outline-variant pt-4">
+<div class="flex items-center gap-3 px-4 py-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary-container">verified_user</span>
+<span class="font-label-md text-label-md">TEE Status: Active</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen relative">
+<!-- Form Header Area -->
+<div class="px-margin-mobile md:px-margin-desktop py-stack-lg border-b border-outline-variant bg-surface-container/50 backdrop-blur-sm sticky top-0 z-30">
+<div class="max-w-[720px] mx-auto w-full">
+<a class="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-stack-md font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">arrow_back</span>
+                    Back to My Trials
+                </a>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Publish a New Trial</h1>
+<div class="flex items-start md:items-center gap-2 text-on-surface-variant font-body-md text-body-md">
+<span class="material-symbols-outlined text-primary-container mt-1 md:mt-0" style="font-variation-settings: 'FILL' 1;">lock</span>
+<p>Criteria are stored in a TEE-secured KV map. Only authorized hospital contracts can read them.</p>
+</div>
+</div>
+</div>
+<!-- Scrollable Form Content -->
+<div class="flex-1 px-margin-mobile md:px-margin-desktop py-stack-lg overflow-y-auto pb-[120px]">
+<div class="max-w-[720px] mx-auto w-full flex flex-col gap-stack-lg">
+<!-- Stepper -->
+<div class="flex items-center justify-between border-b border-outline-variant pb-4 relative">
+<!-- Step 1: Active -->
+<div class="flex-1 flex flex-col gap-2 relative z-10 text-center">
+<span class="font-label-md text-label-md text-primary-container">Step 1</span>
+<span class="font-label-sm text-label-sm text-on-surface font-semibold tracking-wide uppercase">Trial Details</span>
+<div class="absolute -bottom-[17px] left-0 right-0 h-0.5 bg-primary-container"></div>
+</div>
+<!-- Step 2: Inactive -->
+<div class="flex-1 flex flex-col gap-2 relative z-10 text-center opacity-60">
+<span class="font-label-md text-label-md text-on-surface-variant">Step 2</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wide uppercase">Eligibility Criteria</span>
+</div>
+<!-- Step 3: Inactive -->
+<div class="flex-1 flex flex-col gap-2 relative z-10 text-center opacity-60">
+<span class="font-label-md text-label-md text-on-surface-variant">Step 3</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant tracking-wide uppercase">Hospital Partners</span>
+</div>
+</div>
+<!-- Step 1 Form Fields (Primary Focus) -->
+<div class="bg-surface-container rounded-lg border border-outline-variant p-stack-md md:p-gutter shadow-sm inset-shadow-cyan flex flex-col gap-gutter">
+<!-- Trial Name -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="trial-name">Trial Name</label>
+<div class="relative focus-glow rounded-md">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-0 focus:border-transparent transition-colors" id="trial-name" placeholder="e.g., Phase II Study of Novel Kinase Inhibitor" type="text"/>
+</div>
+</div>
+<!-- Phase & Indication Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Phase -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="trial-phase">Phase</label>
+<div class="relative focus-glow rounded-md">
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-md text-body-md appearance-none focus:outline-none focus:ring-0 focus:border-transparent transition-colors" id="trial-phase">
+<option disabled="" selected="" value="">Select Phase</option>
+<option value="I">Phase I</option>
+<option value="II">Phase II</option>
+<option value="III">Phase III</option>
+<option value="IV">Phase IV</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Indication -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="trial-indication">Indication</label>
+<div class="relative focus-glow rounded-md">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-0 focus:border-transparent transition-colors" id="trial-indication" placeholder="e.g., Non-small cell lung cancer" type="text"/>
+</div>
+</div>
+</div>
+<!-- Sponsor Name (Read Only) & Expected Enrollment -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Sponsor -->
+<div class="flex flex-col gap-2 opacity-80">
+<label class="font-label-md text-label-md text-on-surface flex items-center gap-1" for="sponsor-name">
+                                Sponsor Name
+                                <span class="material-symbols-outlined text-[16px] text-primary-container" style="font-variation-settings: 'FILL' 1;">lock</span>
+</label>
+<div class="relative rounded-md cursor-not-allowed">
+<input class="w-full bg-surface-container-highest border border-outline-variant rounded-md px-3 py-2 text-on-surface-variant font-body-md text-body-md cursor-not-allowed focus:outline-none" id="sponsor-name" readonly="" type="text" value="GenoPharma Inc."/>
+</div>
+</div>
+<!-- Enrollment -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="enrollment-count">Expected Enrollment Count</label>
+<div class="relative focus-glow rounded-md">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-md px-3 py-2 text-on-surface font-mono-data text-mono-data placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-0 focus:border-transparent transition-colors" id="enrollment-count" placeholder="0" type="number"/>
+</div>
+</div>
+</div>
+<!-- Start Date -->
+<div class="flex flex-col gap-2 md:w-1/2 md:pr-3">
+<label class="font-label-md text-label-md text-on-surface" for="start-date">Trial Start Date</label>
+<div class="relative focus-glow rounded-md">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-md pl-10 pr-3 py-2 text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-0 focus:border-transparent transition-colors [color-scheme:dark]" id="start-date" type="date"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">calendar_today</span>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface" for="trial-description">Description</label>
+<div class="relative focus-glow rounded-md">
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-md px-3 py-2 text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-0 focus:border-transparent transition-colors resize-y" id="trial-description" placeholder="Brief overview of the trial protocol and objectives..." rows="4"></textarea>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sticky Footer -->
+<div class="fixed bottom-0 right-0 w-full md:w-[calc(100%-16rem)] bg-surface border-t border-outline-variant z-40 p-4">
+<div class="max-w-[720px] mx-auto w-full flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Step 1 of 3</span>
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 border border-outline-variant text-on-surface-variant rounded-md font-label-md text-label-md hover:border-primary-container hover:text-on-surface transition-colors bg-transparent">
+                        Save Draft
+                    </button>
+<button class="px-6 py-2 bg-primary-container text-background font-semibold rounded-md font-label-md text-label-md hover:bg-primary transition-colors flex items-center gap-2">
+                        Continue
+                        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

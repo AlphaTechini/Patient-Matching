@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TrialMatch - Authentication</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#22d3ee",
+                      "surface-bright": "#343a3c",
+                      "error-container": "#93000a",
+                      "surface-dim": "#0e1416",
+                      "on-error-container": "#ffdad6",
+                      "on-background": "#dde4e5",
+                      "secondary-container": "#2f3aa3",
+                      "on-secondary": "#131e8c",
+                      "outline-variant": "#3c494c",
+                      "on-surface": "#dde4e5",
+                      "on-tertiary": "#462b00",
+                      "tertiary-fixed": "#ffddb5",
+                      "inverse-on-surface": "#2b3233",
+                      "surface-container-high": "#242b2d",
+                      "secondary-fixed-dim": "#bdc2ff",
+                      "tertiary": "#ffd6a3",
+                      "tertiary-container": "#ffb13b",
+                      "surface-container-lowest": "#090f11",
+                      "primary": "#8aebff",
+                      "on-tertiary-container": "#6e4600",
+                      "tertiary-fixed-dim": "#ffb957",
+                      "primary-fixed": "#a2eeff",
+                      "surface-tint": "#2fd9f4",
+                      "secondary": "#bdc2ff",
+                      "on-secondary-container": "#a8afff",
+                      "background": "#0B0F1A", // Updated from theme to match prompt
+                      "on-primary-fixed-variant": "#004e5a",
+                      "surface-variant": "#2f3638",
+                      "on-secondary-fixed-variant": "#2f3aa3",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "on-primary-fixed": "#001f25",
+                      "on-primary": "#0B0F1A", // Updated from theme to match prompt text color
+                      "surface-container": "#1a2122",
+                      "surface": "#111827", // Updated from theme
+                      "on-surface-variant": "#94A3B8", // Updated for muted text
+                      "on-secondary-fixed": "#000767",
+                      "inverse-surface": "#dde4e5",
+                      "on-tertiary-fixed": "#2a1800",
+                      "on-tertiary-fixed-variant": "#643f00",
+                      "on-primary-container": "#005763",
+                      "primary-fixed-dim": "#2fd9f4",
+                      "surface-container-highest": "#2f3638",
+                      "outline": "#1E293B", // Updated for borders
+                      "inverse-primary": "#006877",
+                      "secondary-fixed": "#e0e0ff",
+                      "surface-container-low": "#161d1e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "gutter": "24px",
+                      "container-max": "1280px",
+                      "stack-sm": "8px",
+                      "stack-lg": "32px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "32px",
+                      "stack-md": "16px"
+              },
+              "fontFamily": {
+                      "display-xl": [
+                              "Space Grotesk"
+                      ],
+                      "headline-md": [
+                              "Space Grotesk"
+                      ],
+                      "mono-data": [
+                              "JetBrains Mono"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Space Grotesk"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Space Grotesk"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-xl": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "28px", // Updated to 28px per prompt
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mono-data": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Custom Utility Classes as per Style Guidance */
+        .inner-glow {
+            box-shadow: inset 0 1px 0 rgba(34, 211, 238, 0.06);
+        }
+        .cyan-glow {
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+        }
+        .noise-bg {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+        }
+        /* Hide scrollbar for a cleaner look if content overflows slightly */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex items-center justify-center relative overflow-hidden">
+<!-- Optional: Subtle ambient glow behind the main container -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary-container rounded-full blur-[120px] opacity-[0.03] pointer-events-none"></div>
+<div class="noise-bg absolute inset-0 pointer-events-none z-0"></div>
+<div class="relative z-10 w-full max-w-[520px] px-margin-mobile md:px-0">
+<!-- Logo Header (Shared across states) -->
+<div class="flex flex-col items-center mb-stack-lg">
+<div class="flex items-center gap-2 text-primary-container mb-2">
+<span class="material-symbols-outlined text-4xl">local_police</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg tracking-tight text-on-surface">TrialMatch</h1>
+</div>
+<!-- State 1: Role Selection -->
+<div class="w-full transition-opacity duration-300" id="state-1">
+<div class="text-center mb-stack-lg">
+<h2 class="font-headline-md text-headline-md text-on-surface">Who are you signing in as?</h2>
+</div>
+<div class="flex flex-col gap-stack-md mb-stack-lg">
+<!-- Pharma Sponsor Card -->
+<button class="role-card group w-full flex items-center p-stack-md bg-surface border border-outline rounded-lg text-left transition-all duration-200 hover:border-primary-container hover:shadow-[0_0_0_1px_rgba(34,211,238,0.5)] focus:outline-none focus:ring-2 focus:ring-primary-container focus:ring-opacity-50 inner-glow relative overflow-hidden" onclick="selectRole(this, 'Pharma Sponsor')">
+<div class="absolute inset-0 bg-primary-container opacity-0 group-hover:opacity-5 transition-opacity"></div>
+<div class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-[#1A2235] rounded-lg border border-outline mr-4 group-hover:border-primary-container/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-container transition-colors">science</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface mb-1">Pharma Sponsor</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Publish trials and review match results</p>
+</div>
+</button>
+<!-- Hospital / CRO Card -->
+<button class="role-card group w-full flex items-center p-stack-md bg-surface border border-outline rounded-lg text-left transition-all duration-200 hover:border-primary-container hover:shadow-[0_0_0_1px_rgba(34,211,238,0.5)] focus:outline-none focus:ring-2 focus:ring-primary-container focus:ring-opacity-50 inner-glow relative overflow-hidden" onclick="selectRole(this, 'Hospital / CRO')">
+<div class="absolute inset-0 bg-primary-container opacity-0 group-hover:opacity-5 transition-opacity"></div>
+<div class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-[#1A2235] rounded-lg border border-outline mr-4 group-hover:border-primary-container/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-container transition-colors">local_hospital</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface mb-1">Hospital / CRO</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Run confidential eligibility screening</p>
+</div>
+</button>
+<!-- Patient Card -->
+<button class="role-card group w-full flex items-center p-stack-md bg-surface border border-outline rounded-lg text-left transition-all duration-200 hover:border-primary-container hover:shadow-[0_0_0_1px_rgba(34,211,238,0.5)] focus:outline-none focus:ring-2 focus:ring-primary-container focus:ring-opacity-50 inner-glow relative overflow-hidden" onclick="selectRole(this, 'Patient')">
+<div class="absolute inset-0 bg-primary-container opacity-0 group-hover:opacity-5 transition-opacity"></div>
+<div class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-[#1A2235] rounded-lg border border-outline mr-4 group-hover:border-primary-container/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-container transition-colors">how_to_reg</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface mb-1">Patient</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Find trials matched to your health profile</p>
+</div>
+</button>
+</div>
+<button class="w-full bg-primary-container text-on-primary font-label-md text-label-md py-3 rounded-lg font-semibold opacity-50 cursor-not-allowed transition-opacity duration-200" disabled="" id="continue-btn" onclick="goToAuth()">
+                Continue
+            </button>
+</div>
+<!-- State 2: Auth Form (Initially Hidden) -->
+<div class="w-full hidden opacity-0 transition-opacity duration-300 bg-surface border border-outline rounded-xl p-stack-lg inner-glow relative shadow-[0_4px_24px_rgba(0,0,0,0.5)]" id="state-2">
+<button class="absolute top-4 left-4 text-on-surface-variant hover:text-primary-container transition-colors flex items-center justify-center w-8 h-8 rounded-full hover:bg-[#1A2235]" onclick="goBack()">
+<span class="material-symbols-outlined text-xl">arrow_back</span>
+</button>
+<div class="flex justify-center mb-6 mt-2">
+<div class="inline-flex items-center px-3 py-1 bg-[#1A2235] border border-primary-container/30 rounded-full">
+<div class="w-2 h-2 rounded-full bg-primary-container mr-2 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div>
+<span class="font-label-sm text-label-sm text-primary-container font-medium" id="selected-role-badge">Role</span>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex bg-[#1A2235] p-1 rounded-lg mb-8 border border-outline">
+<button class="flex-1 py-2 font-label-md text-label-md rounded-md bg-surface text-on-surface shadow-sm transition-all" id="tab-signin" onclick="switchTab('signin')">Sign In</button>
+<button class="flex-1 py-2 font-label-md text-label-md rounded-md text-on-surface-variant hover:text-on-surface transition-all" id="tab-signup" onclick="switchTab('signup')">Create Account</button>
+</div>
+<!-- Sign In Form -->
+<form class="space-y-4" id="form-signin">
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Email</label>
+<input class="w-full bg-[#1A2235] border border-outline rounded-lg px-4 py-2 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container focus:ring-opacity-20 transition-all placeholder:text-on-surface-variant/50" placeholder="name@organization.com" type="email"/>
+</div>
+<div class="space-y-2 relative">
+<div class="flex justify-between items-center">
+<label class="block font-label-md text-label-md text-on-surface-variant">Password</label>
+<a class="font-label-sm text-label-sm text-primary-container hover:underline" href="#">Forgot?</a>
+</div>
+<div class="relative">
+<input class="w-full bg-[#1A2235] border border-outline rounded-lg px-4 py-2 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container focus:ring-opacity-20 transition-all placeholder:text-on-surface-variant/50" placeholder="••••••••" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface focus:outline-none" type="button">
+<span class="material-symbols-outlined text-sm">visibility_off</span>
+</button>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary font-label-md text-label-md py-3 rounded-lg font-semibold mt-4 hover:bg-primary-fixed transition-colors" type="submit">
+                    Sign In
+                </button>
+</form>
+<!-- Create Account Form (Hidden) -->
+<form class="space-y-4 hidden" id="form-signup">
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Organization Name</label>
+<input class="w-full bg-[#1A2235] border border-outline rounded-lg px-4 py-2 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container focus:ring-opacity-20 transition-all placeholder:text-on-surface-variant/50" placeholder="Acme Healthcare" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Email</label>
+<input class="w-full bg-[#1A2235] border border-outline rounded-lg px-4 py-2 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container focus:ring-opacity-20 transition-all placeholder:text-on-surface-variant/50" placeholder="admin@organization.com" type="email"/>
+</div>
+<div class="space-y-2">
+<label class="block font-label-md text-label-md text-on-surface-variant">Password</label>
+<input class="w-full bg-[#1A2235] border border-outline rounded-lg px-4 py-2 text-on-surface font-body-md focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container focus:ring-opacity-20 transition-all placeholder:text-on-surface-variant/50" placeholder="••••••••" type="password"/>
+</div>
+<button class="w-full bg-primary-container text-on-primary font-label-md text-label-md py-3 rounded-lg font-semibold mt-4 hover:bg-primary-fixed transition-colors" type="submit">
+                    Create Account
+                </button>
+</form>
+<div class="mt-6 pt-6 border-t border-outline flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant mt-0.5">lock</span>
+<p class="font-mono-data text-mono-data text-on-surface-variant">
+                    By continuing, your identity will be issued as a cryptographic DID on Terminal 3.
+                </p>
+</div>
+</div>
+</div>
+<script>
+        let selectedRole = null;
+
+        function selectRole(element, roleName) {
+            selectedRole = roleName;
+            
+            // Reset all cards
+            document.querySelectorAll('.role-card').forEach(card => {
+                card.classList.remove('border-primary-container', 'shadow-[0_0_0_1px_rgba(34,211,238,0.5)]', 'bg-[#1A2235]');
+                const iconContainer = card.querySelector('div:nth-child(2)');
+                iconContainer.classList.remove('border-primary-container', 'bg-surface');
+                const icon = card.querySelector('span');
+                icon.classList.remove('text-primary-container');
+            });
+
+            // Highlight selected card
+            element.classList.add('border-primary-container', 'shadow-[0_0_0_1px_rgba(34,211,238,0.5)]', 'bg-[#1A2235]');
+            const iconContainer = element.querySelector('div:nth-child(2)');
+            iconContainer.classList.add('border-primary-container', 'bg-surface');
+            const icon = element.querySelector('span');
+            icon.classList.add('text-primary-container');
+
+            // Enable continue button
+            const btn = document.getElementById('continue-btn');
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.disabled = false;
+        }
+
+        function goToAuth() {
+            if (!selectedRole) return;
+            
+            document.getElementById('selected-role-badge').textContent = selectedRole;
+            
+            const state1 = document.getElementById('state-1');
+            const state2 = document.getElementById('state-2');
+
+            state1.classList.add('opacity-0');
+            setTimeout(() => {
+                state1.classList.add('hidden');
+                state2.classList.remove('hidden');
+                // slight delay before fading in for smooth transition
+                setTimeout(() => {
+                    state2.classList.remove('opacity-0');
+                }, 50);
+            }, 300);
+        }
+
+        function goBack() {
+            const state1 = document.getElementById('state-1');
+            const state2 = document.getElementById('state-2');
+
+            state2.classList.add('opacity-0');
+            setTimeout(() => {
+                state2.classList.add('hidden');
+                state1.classList.remove('hidden');
+                setTimeout(() => {
+                    state1.classList.remove('opacity-0');
+                }, 50);
+            }, 300);
+        }
+
+        function switchTab(tab) {
+            const btnSignin = document.getElementById('tab-signin');
+            const btnSignup = document.getElementById('tab-signup');
+            const formSignin = document.getElementById('form-signin');
+            const formSignup = document.getElementById('form-signup');
+
+            if (tab === 'signin') {
+                btnSignin.classList.add('bg-surface', 'text-on-surface', 'shadow-sm');
+                btnSignin.classList.remove('text-on-surface-variant');
+                btnSignup.classList.remove('bg-surface', 'text-on-surface', 'shadow-sm');
+                btnSignup.classList.add('text-on-surface-variant');
+                
+                formSignin.classList.remove('hidden');
+                formSignup.classList.add('hidden');
+            } else {
+                btnSignup.classList.add('bg-surface', 'text-on-surface', 'shadow-sm');
+                btnSignup.classList.remove('text-on-surface-variant');
+                btnSignin.classList.remove('bg-surface', 'text-on-surface', 'shadow-sm');
+                btnSignin.classList.add('text-on-surface-variant');
+                
+                formSignup.classList.remove('hidden');
+                formSignin.classList.add('hidden');
+            }
+        }
+    </script>
+</body></html>
