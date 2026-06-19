@@ -8,4 +8,8 @@ If the concern was preventing users from using other email providers like Yahoo 
 
 
 
+FEATURE REQUEST
 
+Also, there is no claim method to transfer test tokens. I wanted to create separate identities for my agents, but I ended up having to make them use my funded API key because they couldn't make transactions on the trusted execution environment due to lacking tokens or credits.
+
+If there is a function that can enable me to easily fund my agents (perhaps even from my original balance), I would really appreciate that help. I guess the current setup simplifies the flow since they all use the same API key, but thinking about the future roadmap where there will be more complexity, it would be better for the agents to have their own credits. I'm just suggesting adding that to the architecture.
