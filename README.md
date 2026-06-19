@@ -83,9 +83,48 @@ Full solution architecture: [Solution.md](Solution.md)
 
 ---
 
-## Project Structure
+## Roadmap
 
-See [`structure.md`](structure.md) for a full directory map and logic locator.
+### **MVP (Current Sprint)**
+✅ **Autonomous Agent-Driven Matching**
+- Hospital clicks "Deploy Agent" → agent scans all patients
+- One agent per trial (named after trial for easy debugging)
+- Automatic patient authorization (no manual steps)
+- Returns eligible patient DIDs + aggregated statistics
+- Privacy preserved: agent sees eligibility only, not PHI
+
+### **Phase 2 (Post-MVP)**
+⏱️ **Scheduled Agent Runs**
+- Cron job every 2 days to check for new patients
+- Efficient batching (e.g., 4 patients every 2 days vs 2 daily)
+- Avoids useless LLM calls while maintaining freshness
+
+⏱️ **Email-Based Patient Contact**
+- Hospital can request contact with eligible patients
+- Platform sends notification email to patient
+- Patient explicitly consents to share data
+- Email addresses exposed only with patient permission
+
+⏱️ **Consent Management Dashboard**
+- Patient UI showing which hospitals requested contact
+- Granular consent options (share diagnosis only, share all, etc.)
+- Time-limited data sharing
+- Revocable permissions at any time
+
+### **Phase 3 (Future)**
+📅 **In-Platform Messaging**
+- Real-time chat between hospital and patient (WebSockets)
+- Patient controls conversation initiation
+- End-to-end encrypted messages
+
+📅 **Partial Match Recommendations**
+- Show patients who failed 1-2 criteria (might still qualify)
+- AI-powered alternative trial suggestions
+
+📅 **Advanced Analytics**
+- Eligibility funnel visualization
+- Criteria impact analysis (which criteria exclude most patients)
+- Federated learning on aggregated (non-PHI) data
 
 ---
 
