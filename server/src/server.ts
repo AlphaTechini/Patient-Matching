@@ -12,6 +12,7 @@ import { trialsRoutes } from "./routes/trials";
 import { patientsRoutes } from "./routes/patients-new";
 import { agentsRoutes } from "./routes/agents";
 import { pharmaRoutes } from "./routes/pharma";
+import { accessLogsRoutes } from "./routes/access-logs";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -101,6 +102,7 @@ await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClien
 await fastify.register(patientsRoutes, { prefix: "/api", useDatabase });
 await fastify.register(agentsRoutes, { prefix: "/api", useDatabase });
 await fastify.register(pharmaRoutes, { prefix: "/api", useDatabase });
+await fastify.register(accessLogsRoutes, { prefix: "/api", useDatabase });
 
 const port = Number(config.PORT);
 

@@ -137,6 +137,29 @@ async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
 
       authorizedCount++;
       console.log(`✅ Authorized agent for patient ${patient.patientDid} (${authorizedCount}/${allPatients.length})`);
+
+      // Log the authorization event
+      try {
+        const response = await fetch(`${process.env.EHR_BASE_URL || "http://localhost:3008"}/api/access-logs`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            patientDid: patient.patientDid,
+            requester: agentDid,
+            requesterName: "Trial Agent", // Will be updated with actual name in deployAgent
+            trialId: "unknown", // Will be updated in deployAgent
+            trialName: "Unknown Trial",
+            action: "authorization",
+            purpose: "Agent authorized to check trial eligibility",
+          }),
+        });
+
+        if (!response.ok) {
+          console.warn(`Failed to log authorization for ${patient.patientDid}`);
+        }
+      } catch (error) {
+        console.warn(`Failed to log authorization event:`, error);
+      }
     } catch (error) {
       console.error(`❌ Failed to authorize agent for patient ${patient.patientDid}:`, error);
       // Continue with other patients
