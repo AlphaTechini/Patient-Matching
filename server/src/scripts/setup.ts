@@ -8,8 +8,14 @@ import {
   createEthAuthInput,
   getNodeUrl,
 } from "@terminal3/t3n-sdk";
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { config } from "dotenv";
+
+// ESM compatibility
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Load environment variables from .env file
 config();
@@ -33,7 +39,32 @@ const HOSPITAL_WASM_PATH = "../contracts/hospital-screening/target/wasm32-wasip2
 
 const PHARMA_CONTRACT_TAIL = "trial-matching";
 const HOSPITAL_CONTRACT_TAIL = "patient-screening";
-const CONTRACT_VERSION = "0.1.0";
+
+// ─── Version Management ──────────────────────────────────────────────────────
+const VERSION_FILE = join(__dirname, "../../../contracts/.version");
+
+async function getContractVersion(): Promise<string> {
+  try {
+    const version = await readFile(VERSION_FILE, "utf-8");
+    return version.trim();
+  } catch {
+    // Default version if file doesn't exist
+    return "0.1.0";
+  }
+}
+
+async function incrementContractVersion(): Promise<string> {
+  const currentVersion = await getContractVersion();
+  const parts = currentVersion.split(".").map(Number);
+  const major = parts[0] || 0;
+  const minor = parts[1] || 1;
+  const patch = parts[2] || 0;
+  
+  const newVersion = `${major}.${minor}.${patch + 1}`;
+  await writeFile(VERSION_FILE, newVersion, "utf-8");
+  console.log(`  ✅ Version incremented: ${currentVersion} → ${newVersion}`);
+  return newVersion;
+}
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 async function createTenantClient(apiKey: string): Promise<{ t3n: T3nClient; tenant: TenantClient; tenantDid: string }> {
@@ -146,6 +177,11 @@ async function seedSecret(
 async function main() {
   console.log("=== TrialMatch Setup ===\n");
 
+  // ── Version Management ───────────────────────────────────────────────────
+  console.log("── Contract Version Management ──");
+  const CONTRACT_VERSION = await getContractVersion();
+  console.log(`  Current version: ${CONTRACT_VERSION}\n`);
+
   // ── Step 1: Pharma Tenant Setup ──────────────────────────────────────────
   console.log("── Step 1: Pharma Tenant Setup ──");
   const { tenant: pharmaTenant, tenantDid: pharmaTenantDid } = await createTenantClient(T3N_API_KEY);
@@ -214,6 +250,11 @@ async function main() {
   await updateKvMapReaders(hospitalTenant, "match-results", [hospitalContractId, pharmaContractId]);
 
   console.log("\n=== Setup Complete ===");
+  
+  // ── Version Increment After Successful Setup ─────────────────────────────
+  console.log("\n── Auto-Incrementing Version ──");
+  await incrementContractVersion();
+  
   console.log("\nNext steps:");
   console.log("  1. Run scripts/authorize.ts to grant the matching agent access");
   console.log("  2. Run scripts/invoke.ts to execute the matching flow");
