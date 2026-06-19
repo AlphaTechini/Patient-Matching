@@ -1,4 +1,4 @@
-import { getMongoDb } from "./database";
+import { getDatabase } from "./database";
 
 export interface MatchResult {
   trialId: string;
@@ -13,7 +13,7 @@ export interface MatchResult {
 }
 
 function getMatchResultsCollection() {
-  const db = getMongoDb();
+  const db = getDatabase();
   return db.collection<MatchResult>("match_results");
 }
 
