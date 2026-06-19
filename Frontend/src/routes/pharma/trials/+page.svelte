@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	interface Trial {
 		id: string;
@@ -55,6 +56,18 @@
 	let runningAgentDid = $state<string | null>(null);
 	let agentResults = $state<Map<string, AgentRunResult>>(new Map());
 
+	// Modal states
+	let showDeploymentModal = $state(false);
+	let deploymentStatus = $state<'deploying' | 'success' | 'error'>('deploying');
+	let deploymentMessage = $state('');
+	let deployedAgentDetails = $state<{ agentName: string; agentDid: string; patientsAuthorized: number } | null>(null);
+
+	// Agent run modal states
+	let showRunModal = $state(false);
+	let runStatus = $state<'running' | 'success' | 'error'>('running');
+	let runMessage = $state('');
+	let runProgress = $state({ current: 0, total: 0 });
+
 	onMount(async () => {
 		await fetchTrials();
 	});
@@ -98,6 +111,9 @@
 	async function deployAgent(trialId: string, trialName: string) {
 		try {
 			deployingTrialId = trialId;
+			showDeploymentModal = true;
+			deploymentStatus = 'deploying';
+			deploymentMessage = 'Creating agent identity...';
 			error = '';
 
 			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/deploy-agent`, {
@@ -114,19 +130,39 @@
 			const data = await response.json();
 			console.log('Agent deployed:', data);
 
+			// Show success state
+			deploymentStatus = 'success';
+			deploymentMessage = 'Agent deployed successfully!';
+			deployedAgentDetails = {
+				agentName: data.agent.agentName,
+				agentDid: data.agent.agentDid,
+				patientsAuthorized: data.patientsAuthorized
+			};
+
 			// Refresh agents list
 			await fetchAgentsForTrial(trialId);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to deploy agent';
+			deploymentStatus = 'error';
+			deploymentMessage = err instanceof Error ? err.message : 'Failed to deploy agent';
+			error = deploymentMessage;
 			console.error('Error deploying agent:', err);
 		} finally {
 			deployingTrialId = null;
 		}
 	}
 
+	function closeDeploymentModal() {
+		showDeploymentModal = false;
+		deployedAgentDetails = null;
+	}
+
 	async function runAgent(agentDid: string, trialId: string) {
 		try {
 			runningAgentDid = agentDid;
+			showRunModal = true;
+			runStatus = 'running';
+			runMessage = 'Scanning patients through TEE...';
+			runProgress = { current: 0, total: 0 };
 			error = '';
 
 			const response = await fetch(`http://localhost:3008/api/agents/${agentDid}/run`, {
@@ -141,6 +177,10 @@
 			const data = await response.json();
 			console.log('Agent run complete:', data);
 
+			// Show success state
+			runStatus = 'success';
+			runMessage = 'Matching complete!';
+
 			// Store results
 			agentResults.set(trialId, {
 				eligiblePatients: data.eligiblePatients,
@@ -152,11 +192,17 @@
 			// Refresh agents list to update stats
 			await fetchAgentsForTrial(trialId);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Failed to run agent';
+			runStatus = 'error';
+			runMessage = err instanceof Error ? err.message : 'Failed to run agent';
+			error = runMessage;
 			console.error('Error running agent:', err);
 		} finally {
 			runningAgentDid = null;
 		}
+	}
+
+	function closeRunModal() {
+		showRunModal = false;
 	}
 
 	const filteredTrials = $derived(
@@ -439,3 +485,170 @@
 	</div>
 	{/if}
 </main>
+
+<!-- Agent Deployment Modal -->
+<Modal bind:isOpen={showDeploymentModal} title="Agent Deployment" size="md" showCloseButton={deploymentStatus !== 'deploying'}>
+	<div class="space-y-6">
+		{#if deploymentStatus === 'deploying'}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+				<p class="text-lg font-medium text-on-surface mb-2">Deploying Agent</p>
+				<p class="text-sm text-on-surface-variant text-center max-w-sm">
+					{deploymentMessage}
+				</p>
+				<div class="mt-6 w-full max-w-sm">
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
+						<span class="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+						<span>Creating cryptographic identity</span>
+					</div>
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
+						<span class="material-symbols-outlined text-[18px] text-primary">lock</span>
+						<span>Authorizing for all patients</span>
+					</div>
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+						<span class="material-symbols-outlined text-[18px] text-primary">shield</span>
+						<span>Configuring TEE permissions</span>
+					</div>
+				</div>
+			</div>
+		{:else if deploymentStatus === 'success'}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 rounded-full bg-[var(--color-tm-success)]/20 flex items-center justify-center mb-4">
+					<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[40px]">check_circle</span>
+				</div>
+				<p class="text-lg font-medium text-on-surface mb-2">Agent Deployed Successfully!</p>
+				<p class="text-sm text-on-surface-variant text-center max-w-sm mb-6">
+					Your agent is ready to scan patients for eligible matches.
+				</p>
+
+				{#if deployedAgentDetails}
+					<div class="w-full bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4 space-y-3">
+						<div class="flex items-center justify-between">
+							<span class="text-sm text-on-surface-variant">Agent Name</span>
+							<span class="text-sm font-medium text-on-surface">{deployedAgentDetails.agentName}</span>
+						</div>
+						<div class="flex items-center justify-between">
+							<span class="text-sm text-on-surface-variant">Agent DID</span>
+							<span class="text-xs font-mono text-on-surface-variant">
+								{deployedAgentDetails.agentDid.slice(0, 20)}...
+							</span>
+						</div>
+						<div class="flex items-center justify-between">
+							<span class="text-sm text-on-surface-variant">Patients Authorized</span>
+							<span class="text-sm font-bold text-[var(--color-tm-success)]">
+								{deployedAgentDetails.patientsAuthorized}
+							</span>
+						</div>
+					</div>
+				{/if}
+
+				<button 
+					class="btn-primary mt-6 w-full"
+					onclick={closeDeploymentModal}
+				>
+					Done
+				</button>
+			</div>
+		{:else if deploymentStatus === 'error'}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+					<span class="material-symbols-outlined text-red-500 text-[40px]">error</span>
+				</div>
+				<p class="text-lg font-medium text-on-surface mb-2">Deployment Failed</p>
+				<p class="text-sm text-red-500 text-center max-w-sm mb-6">
+					{deploymentMessage}
+				</p>
+
+				<button 
+					class="btn-ghost w-full"
+					onclick={closeDeploymentModal}
+				>
+					Close
+				</button>
+			</div>
+		{/if}
+	</div>
+</Modal>
+
+<!-- Agent Run Modal -->
+<Modal bind:isOpen={showRunModal} title="Agent Matching" size="md" showCloseButton={runStatus !== 'running'}>
+	<div class="space-y-6">
+		{#if runStatus === 'running'}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+				<p class="text-lg font-medium text-on-surface mb-2">Scanning Patients</p>
+				<p class="text-sm text-on-surface-variant text-center max-w-sm">
+					{runMessage}
+				</p>
+				<div class="mt-6 w-full max-w-sm">
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
+						<span class="material-symbols-outlined text-[18px] text-primary">encrypted</span>
+						<span>Processing health records in TEE</span>
+					</div>
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant mb-2">
+						<span class="material-symbols-outlined text-[18px] text-primary">psychology</span>
+						<span>Evaluating eligibility criteria</span>
+					</div>
+					<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+						<span class="material-symbols-outlined text-[18px] text-primary">shield</span>
+						<span>Privacy preserved - no PHI exposed</span>
+					</div>
+				</div>
+			</div>
+		{:else if runStatus === 'success'}
+			{@const currentResults = Array.from(agentResults.values()).find(r => r)}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 rounded-full bg-[var(--color-tm-success)]/20 flex items-center justify-center mb-4">
+					<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[40px]">check_circle</span>
+				</div>
+				<p class="text-lg font-medium text-on-surface mb-2">Matching Complete!</p>
+				<p class="text-sm text-on-surface-variant text-center max-w-sm mb-6">
+					Agent has finished screening all patients for eligibility.
+				</p>
+
+				{#if currentResults}
+					<div class="w-full grid grid-cols-2 gap-3 mb-4">
+						<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4 text-center">
+							<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Screened</p>
+							<p class="text-2xl font-bold text-on-surface">{currentResults.summary.screened}</p>
+						</div>
+						<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4 text-center">
+							<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Eligible</p>
+							<p class="text-2xl font-bold text-[var(--color-tm-success)]">{currentResults.summary.eligible}</p>
+						</div>
+					</div>
+					<div class="w-full bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-4">
+						<div class="flex items-center justify-between">
+							<span class="text-sm text-on-surface-variant">Eligibility Rate</span>
+							<span class="text-lg font-bold text-[var(--color-tm-cyan)]">{currentResults.summary.eligibilityRate}</span>
+						</div>
+					</div>
+				{/if}
+
+				<button 
+					class="btn-primary mt-6 w-full"
+					onclick={closeRunModal}
+				>
+					View Results
+				</button>
+			</div>
+		{:else if runStatus === 'error'}
+			<div class="flex flex-col items-center justify-center py-8">
+				<div class="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mb-4">
+					<span class="material-symbols-outlined text-red-500 text-[40px]">error</span>
+				</div>
+				<p class="text-lg font-medium text-on-surface mb-2">Matching Failed</p>
+				<p class="text-sm text-red-500 text-center max-w-sm mb-6">
+					{runMessage}
+				</p>
+
+				<button 
+					class="btn-ghost w-full"
+					onclick={closeRunModal}
+				>
+					Close
+				</button>
+			</div>
+		{/if}
+	</div>
+</Modal>
