@@ -1,7 +1,19 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { identityStore } from '$lib/stores/identity.svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
 	import TeeSecuredBadge from '$lib/components/TeeSecuredBadge.svelte';
+	import HealthRecordUpload from '$lib/components/HealthRecordUpload.svelte';
+	
+	onMount(() => {
+		// Restore identity and check auth
+		identityStore.restore();
+		if (!identityStore.isAuthenticated) {
+			goto('/login');
+		}
+	});
 </script>
 
 <TopBar title="Dashboard" />
@@ -58,8 +70,11 @@
 	</div>
 
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
-		<!-- Left Column: Live Matches & Tasks -->
+		<!-- Left Column: Health Upload & Live Matches -->
 		<div class="lg:col-span-2 flex flex-col gap-gutter">
+			<!-- Health Record Upload -->
+			<HealthRecordUpload />
+			
 			<!-- Live Matches -->
 			<section class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl inner-glow flex flex-col">
 				<div class="p-stack-md border-b border-[var(--color-tm-border)] flex justify-between items-center bg-surface-container-low/50">
