@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { pharmaStore } from '$lib/stores/pharma.svelte';
+
 	let { role = 'patient', activeItem = 'dashboard' } = $props<{
 		role?: 'patient' | 'pharma' | 'hospital';
 		activeItem?: string;
@@ -29,7 +31,12 @@
 
 	const brandInfo = {
 		patient: { title: 'TrialMatch', subtitle: 'Patient Portal', icon: 'health_and_safety', did: 'did:t3n:p:0x8a...3f21' },
-		pharma: { title: 'GenoPharma Inc.', subtitle: 'TEE Secured Instance', icon: 'science', did: 'did:t3n:org:0x2f...d9f4' },
+		pharma: { 
+			get title() { return pharmaStore.name || 'Pharma Portal'; }, 
+			subtitle: 'TEE Secured Instance', 
+			icon: 'science', 
+			get did() { return pharmaStore.did || 'did:t3n:org:...'; }
+		},
 		hospital: { title: 'Hospital Portal', subtitle: 'TEE Secured Environment', icon: 'local_hospital', did: 'did:t3n:hosp:0x7b...1a2d', orgName: 'University College Hospital' }
 	};
 

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import TopBar from '$lib/components/TopBar.svelte';
+	import { pharmaStore } from '$lib/stores/pharma.svelte';
 
 	let mode = $state<'login' | 'register'>('login');
 	let pharmaName = $state('');
@@ -49,8 +50,8 @@
 
 			const data = await response.json();
 			
-			// Store pharma info in localStorage
-			localStorage.setItem('pharma', JSON.stringify(data.pharma));
+			// Store pharma info using pharmaStore
+			pharmaStore.setPharma(data.pharma);
 
 			// Redirect to trials page
 			goto('/pharma/trials');
