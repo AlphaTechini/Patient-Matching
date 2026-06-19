@@ -1,6 +1,192 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
+
+	interface Trial {
+		id: string;
+		name: string;
+		sponsor: string;
+		phase: string;
+		indication: string;
+		criteria: {
+			inclusion: string[];
+			exclusion: string[];
+		};
+		createdAt: string;
+	}
+
+	interface Agent {
+		agentName: string;
+		agentDid: string;
+		status: string;
+		createdAt: string;
+		lastRunAt?: string;
+		stats?: {
+			totalRuns: number;
+			patientsScreened: number;
+			patientsMatched: number;
+		};
+	}
+
+	interface AgentRunResult {
+		eligiblePatients: Array<{
+			patientDid: string;
+			confidence: number;
+			matchedCriteria: number;
+			totalCriteria: number;
+		}>;
+		summary: {
+			screened: number;
+			eligible: number;
+			eligibilityRate: string;
+			averageConfidence: number;
+		};
+		ranAt: string;
+	}
+
+	let trials: Trial[] = $state([]);
+	let agentsByTrial: Map<string, Agent[]> = $state(new Map());
+	let isLoading = $state(true);
+	let error = $state('');
+	let searchQuery = $state('');
+
+	let deployingTrialId = $state<string | null>(null);
+	let runningAgentDid = $state<string | null>(null);
+	let agentResults = $state<Map<string, AgentRunResult>>(new Map());
+
+	onMount(async () => {
+		await fetchTrials();
+	});
+
+	async function fetchTrials() {
+		try {
+			isLoading = true;
+			error = '';
+
+			const response = await fetch('http://localhost:3008/api/trials/all');
+			if (!response.ok) throw new Error('Failed to fetch trials');
+
+			const data = await response.json();
+			trials = data.trials || [];
+
+			// Fetch agents for each trial
+			for (const trial of trials) {
+				await fetchAgentsForTrial(trial.id);
+			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to load trials';
+			console.error('Error fetching trials:', err);
+		} finally {
+			isLoading = false;
+		}
+	}
+
+	async function fetchAgentsForTrial(trialId: string) {
+		try {
+			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/agents`);
+			if (!response.ok) return;
+
+			const data = await response.json();
+			agentsByTrial.set(trialId, data.agents || []);
+			agentsByTrial = agentsByTrial;
+		} catch (err) {
+			console.error(`Error fetching agents for trial ${trialId}:`, err);
+		}
+	}
+
+	async function deployAgent(trialId: string, trialName: string) {
+		try {
+			deployingTrialId = trialId;
+			error = '';
+
+			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/deploy-agent`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ agentName: `${trialName} Agent` })
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to deploy agent');
+			}
+
+			const data = await response.json();
+			console.log('Agent deployed:', data);
+
+			// Refresh agents list
+			await fetchAgentsForTrial(trialId);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to deploy agent';
+			console.error('Error deploying agent:', err);
+		} finally {
+			deployingTrialId = null;
+		}
+	}
+
+	async function runAgent(agentDid: string, trialId: string) {
+		try {
+			runningAgentDid = agentDid;
+			error = '';
+
+			const response = await fetch(`http://localhost:3008/api/agents/${agentDid}/run`, {
+				method: 'POST'
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to run agent');
+			}
+
+			const data = await response.json();
+			console.log('Agent run complete:', data);
+
+			// Store results
+			agentResults.set(trialId, {
+				eligiblePatients: data.eligiblePatients,
+				summary: data.summary,
+				ranAt: data.ranAt
+			});
+			agentResults = agentResults;
+
+			// Refresh agents list to update stats
+			await fetchAgentsForTrial(trialId);
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to run agent';
+			console.error('Error running agent:', err);
+		} finally {
+			runningAgentDid = null;
+		}
+	}
+
+	const filteredTrials = $derived(
+		trials.filter((trial) =>
+			trial.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			trial.sponsor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			trial.indication.toLowerCase().includes(searchQuery.toLowerCase())
+		)
+	);
+
+	const totalMatches = $derived(
+		Array.from(agentResults.values()).reduce((sum, result) => sum + result.summary.eligible, 0)
+	);
+
+	const totalScreened = $derived(
+		Array.from(agentResults.values()).reduce((sum, result) => sum + result.summary.screened, 0)
+	);
+
+	function getTotalCriteria(trial: Trial): number {
+		return trial.criteria.inclusion.length + trial.criteria.exclusion.length;
+	}
+
+	function getAgentForTrial(trialId: string): Agent | null {
+		const agents = agentsByTrial.get(trialId);
+		return agents && agents.length > 0 ? agents[0] : null;
+	}
+
+	function getResultsForTrial(trialId: string): AgentRunResult | null {
+		return agentResults.get(trialId) || null;
+	}
 </script>
 
 <TopBar title="Published Trials" showSearch={false} />
@@ -15,43 +201,60 @@
 		</a>
 	</div>
 
-	<!-- Summary Strip -->
-	<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-		<!-- Card 1 -->
-		<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
-			<div>
-				<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Active Trials</p>
-				<p class="text-display-xl text-[var(--color-tm-cyan)] text-glow">3</p>
-			</div>
-			<div class="w-12 h-12 rounded-full bg-[var(--color-tm-cyan)]/10 flex items-center justify-center">
-				<span class="material-symbols-outlined text-[var(--color-tm-cyan)] text-[24px]">science</span>
+	{#if error}
+		<div class="bg-red-500/10 border border-red-500 text-red-500 rounded-xl p-4 flex items-center gap-3">
+			<span class="material-symbols-outlined">error</span>
+			<p>{error}</p>
+		</div>
+	{/if}
+
+	{#if isLoading}
+		<div class="flex items-center justify-center py-12">
+			<div class="flex flex-col items-center gap-4">
+				<div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+				<p class="text-on-surface-variant">Loading trials...</p>
 			</div>
 		</div>
-		
-		<!-- Card 2 -->
-		<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
-			<div>
-				<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Matches Found</p>
-				<p class="text-display-xl text-[var(--color-tm-success)] text-glow">47</p>
+	{:else}
+		<!-- Summary Strip -->
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+			<!-- Card 1 -->
+			<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
+				<div>
+					<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Active Trials</p>
+					<p class="text-display-xl text-[var(--color-tm-cyan)] text-glow">{trials.length}</p>
+				</div>
+				<div class="w-12 h-12 rounded-full bg-[var(--color-tm-cyan)]/10 flex items-center justify-center">
+					<span class="material-symbols-outlined text-[var(--color-tm-cyan)] text-[24px]">science</span>
+				</div>
 			</div>
-			<div class="w-12 h-12 rounded-full bg-[var(--color-tm-success)]/10 flex items-center justify-center">
-				<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[24px]">group</span>
+			
+			<!-- Card 2 -->
+			<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
+				<div>
+					<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Total Matches Found</p>
+					<p class="text-display-xl text-[var(--color-tm-success)] text-glow">{totalMatches}</p>
+				</div>
+				<div class="w-12 h-12 rounded-full bg-[var(--color-tm-success)]/10 flex items-center justify-center">
+					<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[24px]">group</span>
+				</div>
+			</div>
+			
+			<!-- Card 3 -->
+			<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
+				<div>
+					<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Patients Screened</p>
+					<p class="text-display-xl text-[var(--color-tm-warning)] text-glow">{totalScreened}</p>
+				</div>
+				<div class="w-12 h-12 rounded-full bg-[var(--color-tm-warning)]/10 flex items-center justify-center">
+					<span class="material-symbols-outlined text-[var(--color-tm-warning)] text-[24px]">hourglass_empty</span>
+				</div>
 			</div>
 		</div>
-		
-		<!-- Card 3 -->
-		<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-stack-md inner-glow flex items-center justify-between">
-			<div>
-				<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Pending Enrollment</p>
-				<p class="text-display-xl text-[var(--color-tm-warning)] text-glow">12</p>
-			</div>
-			<div class="w-12 h-12 rounded-full bg-[var(--color-tm-warning)]/10 flex items-center justify-center">
-				<span class="material-symbols-outlined text-[var(--color-tm-warning)] text-[24px]">hourglass_empty</span>
-			</div>
-		</div>
-	</div>
+	{/if}
 
 	<!-- Trials Table Section -->
+	{#if !isLoading}
 	<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl inner-glow overflow-hidden flex flex-col">
 		<!-- Table Header/Toolbar -->
 		<div class="p-stack-md border-b border-[var(--color-tm-border)] flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-[var(--color-tm-surface)]">
@@ -61,113 +264,178 @@
 			</div>
 			<div class="relative">
 				<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
-				<input type="text" class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg text-label-md text-on-surface pl-9 pr-3 py-1.5 focus:border-primary-container focus:ring-1 focus:ring-primary-container/20 w-full sm:w-64 placeholder:text-on-surface-variant" placeholder="Search trials...">
+				<input 
+					type="text" 
+					bind:value={searchQuery}
+					class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg text-label-md text-on-surface pl-9 pr-3 py-1.5 focus:border-primary-container focus:ring-1 focus:ring-primary-container/20 w-full sm:w-64 placeholder:text-on-surface-variant" 
+					placeholder="Search trials..."
+				>
 			</div>
 		</div>
 		
-		<!-- Table Content -->
-		<div class="overflow-x-auto">
-			<table class="w-full text-left border-collapse">
-				<thead>
-					<tr class="bg-[var(--color-tm-base)] border-b border-[var(--color-tm-border)]">
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Trial Name</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Phase</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Hospital Partner</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Criteria</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Matches</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Status</th>
-						<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider text-right">Actions</th>
-					</tr>
-				</thead>
-				<tbody class="text-body-md">
-					<!-- Row 1 -->
-					<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group">
-						<td class="py-3 px-4 font-medium text-on-surface">NSCLC Stage III Immunotherapy</td>
-						<td class="py-3 px-4 text-[var(--color-tm-success)]">Phase III</td>
-						<td class="py-3 px-4 text-on-surface-variant">University College Hospital</td>
-						<td class="py-3 px-4 text-on-surface-variant">14 criteria</td>
-						<td class="py-3 px-4 font-mono-data text-[var(--color-tm-success)] font-bold">22</td>
-						<td class="py-3 px-4">
-							<StatusChip status="Active" size="sm" />
-						</td>
-						<td class="py-3 px-4 text-right">
-							<div class="flex items-center justify-end gap-2">
-								<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
-								<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
-									<span class="material-symbols-outlined text-[20px]">edit</span>
-								</button>
-							</div>
-						</td>
-					</tr>
-					<!-- Row 2 -->
-					<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group bg-[var(--color-tm-base)]/30">
-						<td class="py-3 px-4 font-medium text-on-surface">Early-Onset Alzheimer's Study</td>
-						<td class="py-3 px-4 text-[var(--color-tm-cyan)]">Phase II</td>
-						<td class="py-3 px-4 text-on-surface-variant">Mayo Clinic</td>
-						<td class="py-3 px-4 text-on-surface-variant">9 criteria</td>
-						<td class="py-3 px-4 font-mono-data text-[var(--color-tm-success)] font-bold">15</td>
-						<td class="py-3 px-4">
-							<StatusChip status="Active" size="sm" />
-						</td>
-						<td class="py-3 px-4 text-right">
-							<div class="flex items-center justify-end gap-2">
-								<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
-								<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
-									<span class="material-symbols-outlined text-[20px]">edit</span>
-								</button>
-							</div>
-						</td>
-					</tr>
-					<!-- Row 3 -->
-					<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group">
-						<td class="py-3 px-4 font-medium text-on-surface">Cardiovascular Risk Prevention</td>
-						<td class="py-3 px-4 text-[var(--color-tm-warning)]">Phase I</td>
-						<td class="py-3 px-4 text-on-surface-variant">St. Nicholas Hospital</td>
-						<td class="py-3 px-4 text-on-surface-variant">11 criteria</td>
-						<td class="py-3 px-4 font-mono-data text-[var(--color-tm-success)] font-bold">10</td>
-						<td class="py-3 px-4">
-							<StatusChip status="Paused" size="sm" />
-						</td>
-						<td class="py-3 px-4 text-right">
-							<div class="flex items-center justify-end gap-2">
-								<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
-								<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
-									<span class="material-symbols-outlined text-[20px]">edit</span>
-								</button>
-							</div>
-						</td>
-					</tr>
-					<!-- Row 4 -->
-					<tr class="hover:bg-[var(--color-tm-elevated)] transition-colors group bg-[var(--color-tm-base)]/30">
-						<td class="py-3 px-4 font-medium text-on-surface">Genomic Sequencing - Rare Diseases</td>
-						<td class="py-3 px-4 text-[var(--color-tm-success)]">Phase III</td>
-						<td class="py-3 px-4 text-on-surface-variant">Nexus Labs</td>
-						<td class="py-3 px-4 text-on-surface-variant">18 criteria</td>
-						<td class="py-3 px-4 font-mono-data text-on-surface-variant font-bold">0</td>
-						<td class="py-3 px-4">
-							<StatusChip status="Completed" size="sm" />
-						</td>
-						<td class="py-3 px-4 text-right">
-							<div class="flex items-center justify-end gap-2">
-								<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
-								<button class="text-on-surface-variant hover:text-primary transition-colors p-1">
-									<span class="material-symbols-outlined text-[20px]">edit</span>
-								</button>
-							</div>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-		
-		<!-- Table Footer / Pagination -->
-		<div class="p-4 border-t border-[var(--color-tm-border)] bg-[var(--color-tm-base)] flex justify-between items-center text-sm text-on-surface-variant">
-			<div>Showing 1 to 4 of 4 results</div>
-			<div class="flex gap-1">
-				<button class="btn-ghost py-1 px-3 opacity-50 cursor-not-allowed">Previous</button>
-				<button class="px-3 py-1 border border-primary rounded bg-primary-container/10 text-primary transition-colors">1</button>
-				<button class="btn-ghost py-1 px-3 opacity-50 cursor-not-allowed">Next</button>
+		{#if filteredTrials.length === 0}
+			<div class="flex flex-col items-center justify-center py-12 text-on-surface-variant">
+				<span class="material-symbols-outlined text-[48px] mb-4">science</span>
+				<p class="text-lg">No trials found</p>
+				<p class="text-sm mt-2">Create your first trial to get started</p>
+				<a href="/pharma/trials/new" class="btn-primary mt-4">
+					<span class="material-symbols-outlined text-[18px]">add</span>
+					Create Trial
+				</a>
 			</div>
-		</div>
+		{:else}
+			<!-- Table Content -->
+			<div class="overflow-x-auto">
+				<table class="w-full text-left border-collapse">
+					<thead>
+						<tr class="bg-[var(--color-tm-base)] border-b border-[var(--color-tm-border)]">
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Trial Name</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Phase</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Sponsor</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Criteria</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Matches</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider">Agent</th>
+							<th class="py-3 px-4 text-label-sm uppercase text-on-surface-variant font-medium tracking-wider text-right">Actions</th>
+						</tr>
+					</thead>
+					<tbody class="text-body-md">
+						{#each filteredTrials as trial, i}
+							{@const agent = getAgentForTrial(trial.id)}
+							{@const results = getResultsForTrial(trial.id)}
+							<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group" class:bg-[var(--color-tm-base)]/30={i % 2 === 1}>
+								<td class="py-3 px-4 font-medium text-on-surface">{trial.name}</td>
+								<td class="py-3 px-4">
+									<span class="text-[var(--color-tm-{trial.phase === 'Phase III' ? 'success' : trial.phase === 'Phase II' ? 'cyan' : 'warning'})]">
+										{trial.phase}
+									</span>
+								</td>
+								<td class="py-3 px-4 text-on-surface-variant">{trial.sponsor}</td>
+								<td class="py-3 px-4 text-on-surface-variant">{getTotalCriteria(trial)} criteria</td>
+								<td class="py-3 px-4">
+									{#if results}
+										<span class="font-mono-data text-[var(--color-tm-success)] font-bold">{results.summary.eligible}</span>
+										<span class="text-on-surface-variant text-sm"> / {results.summary.screened}</span>
+									{:else}
+										<span class="text-on-surface-variant">—</span>
+									{/if}
+								</td>
+								<td class="py-3 px-4">
+									{#if agent}
+										<div class="flex items-center gap-2">
+											<div class="w-2 h-2 rounded-full bg-[var(--color-tm-success)]"></div>
+											<span class="text-sm text-on-surface-variant">Deployed</span>
+										</div>
+									{:else}
+										<span class="text-on-surface-variant text-sm">Not deployed</span>
+									{/if}
+								</td>
+								<td class="py-3 px-4 text-right">
+									<div class="flex items-center justify-end gap-2">
+										{#if !agent}
+											<button 
+												class="btn-primary py-1 px-3 text-sm flex items-center gap-1"
+												onclick={() => deployAgent(trial.id, trial.name)}
+												disabled={deployingTrialId === trial.id}
+											>
+												{#if deployingTrialId === trial.id}
+													<div class="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+													Deploying...
+												{:else}
+													<span class="material-symbols-outlined text-[16px]">rocket_launch</span>
+													Deploy Agent
+												{/if}
+											</button>
+										{:else}
+											<button 
+												class="btn-ghost py-1 px-3 text-sm flex items-center gap-1"
+												onclick={() => runAgent(agent.agentDid, trial.id)}
+												disabled={runningAgentDid === agent.agentDid}
+											>
+												{#if runningAgentDid === agent.agentDid}
+													<div class="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+													Running...
+												{:else}
+													<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+													Run Agent
+												{/if}
+											</button>
+											{#if results}
+												<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
+											{/if}
+										{/if}
+									</div>
+								</td>
+							</tr>
+							{#if results && agent}
+								<tr class="bg-[var(--color-tm-base)] border-b border-[var(--color-tm-border)]">
+									<td colspan="7" class="py-4 px-4">
+										<div class="space-y-3">
+											<div class="flex items-center gap-2 text-sm text-on-surface-variant">
+												<span class="material-symbols-outlined text-[18px]">analytics</span>
+												<span class="font-medium">Agent Run Results</span>
+												<span class="text-xs ml-2">
+													{new Date(results.ranAt).toLocaleString()}
+												</span>
+											</div>
+											<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
+													<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Screened</p>
+													<p class="text-2xl font-bold text-on-surface">{results.summary.screened}</p>
+												</div>
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
+													<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Eligible</p>
+													<p class="text-2xl font-bold text-[var(--color-tm-success)]">{results.summary.eligible}</p>
+												</div>
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
+													<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Eligibility Rate</p>
+													<p class="text-2xl font-bold text-[var(--color-tm-cyan)]">{results.summary.eligibilityRate}</p>
+												</div>
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
+													<p class="text-xs text-on-surface-variant uppercase tracking-wider mb-1">Avg Confidence</p>
+													<p class="text-2xl font-bold text-[var(--color-tm-warning)]">
+														{(results.summary.averageConfidence * 100).toFixed(0)}%
+													</p>
+												</div>
+											</div>
+											{#if results.eligiblePatients.length > 0}
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
+													<p class="text-sm font-medium text-on-surface mb-2">Eligible Patients</p>
+													<div class="space-y-2 max-h-40 overflow-y-auto">
+														{#each results.eligiblePatients as patient}
+															<div class="flex items-center justify-between text-sm bg-[var(--color-tm-base)] rounded p-2">
+																<span class="font-mono text-on-surface-variant">{patient.patientDid.slice(0, 20)}...</span>
+																<div class="flex items-center gap-3">
+																	<span class="text-on-surface-variant">
+																		{patient.matchedCriteria}/{patient.totalCriteria} criteria
+																	</span>
+																	<span class="text-[var(--color-tm-success)] font-bold">
+																		{(patient.confidence * 100).toFixed(0)}%
+																	</span>
+																</div>
+															</div>
+														{/each}
+													</div>
+												</div>
+											{/if}
+										</div>
+									</td>
+								</tr>
+							{/if}
+						{/each}
+					</tbody>
+				</table>
+			</div>
+			
+			<!-- Table Footer / Pagination -->
+			<div class="p-4 border-t border-[var(--color-tm-border)] bg-[var(--color-tm-base)] flex justify-between items-center text-sm text-on-surface-variant">
+				<div>Showing 1 to {filteredTrials.length} of {filteredTrials.length} results</div>
+				<div class="flex gap-1">
+					<button class="btn-ghost py-1 px-3 opacity-50 cursor-not-allowed">Previous</button>
+					<button class="px-3 py-1 border border-primary rounded bg-primary-container/10 text-primary transition-colors">1</button>
+					<button class="btn-ghost py-1 px-3 opacity-50 cursor-not-allowed">Next</button>
+				</div>
+			</div>
+		{/if}
 	</div>
+	{/if}
 </main>
