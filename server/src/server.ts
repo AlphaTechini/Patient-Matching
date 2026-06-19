@@ -8,7 +8,7 @@ import { TEEClient, MockTEEClient } from "./tee-client";
 import { connectDatabase, closeDatabase } from "./services/database";
 import { matchRoutes } from "./routes/match";
 import { trialsRoutes } from "./routes/trials";
-import { patientsRoutes } from "./routes/patients";
+import { patientsRoutes } from "./routes/patients-new";
 
 const fastify = Fastify({ logger: true });
 
@@ -69,7 +69,7 @@ const orchestrator = new Orchestrator(llmService, teeClient);
 
 await fastify.register(matchRoutes, { prefix: "/api", orchestrator });
 await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient });
-await fastify.register(patientsRoutes, { prefix: "/api", llm: llmService, useDatabase });
+await fastify.register(patientsRoutes, { prefix: "/api", useDatabase });
 
 const port = Number(config.PORT);
 

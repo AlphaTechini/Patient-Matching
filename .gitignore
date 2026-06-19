@@ -36,3 +36,8 @@ coverage/
 # Temporary
 tmp/
 temp/
+
+# Private documentation (not for public)
+Demo_User_Flow.md
+MVP_Frontend_Documentation.md
+stages.md

@@ -32,20 +32,37 @@ export async function closeDatabase(): Promise<void> {
   }
 }
 
-export interface PatientRecord {
-  did: string;
-  rawText: string;
-  extractedData: Record<string, unknown>;
-  metadata: {
-    uploadedAt: Date;
-    fileName: string;
-    fileSize: number;
-    processingStatus: "pending" | "completed" | "failed";
-    processingError?: string;
+// Patient credentials (encrypted wallet) - stored in MongoDB
+export interface PatientCredentials {
+  email: string;
+  patientDid: string; // did:t3n:xxx
+  ethAddress: string; // 0x...
+  encryptedPrivateKey: string; // Encrypted with WALLET_ENCRYPTION_KEY
+  createdAt: Date;
+  lastLogin?: Date;
+}
+
+// Patient metadata (NOT medical data) - stored in MongoDB
+export interface PatientMetadata {
+  patientDid: string;
+  uploadStatus: {
+    hasHealthRecords: boolean;
+    lastUploadedAt?: Date;
+    fileName?: string;
+    fileSize?: number;
+  };
+  preferences?: {
+    notifications: boolean;
+    language: string;
   };
 }
 
-export function getPatientsCollection(): Collection<PatientRecord> {
+export function getPatientCredentialsCollection(): Collection<PatientCredentials> {
   const database = getDatabase();
-  return database.collection<PatientRecord>("patients");
+  return database.collection<PatientCredentials>("patient_credentials");
+}
+
+export function getPatientMetadataCollection(): Collection<PatientMetadata> {
+  const database = getDatabase();
+  return database.collection<PatientMetadata>("patient_metadata");
 }
