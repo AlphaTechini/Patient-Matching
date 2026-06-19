@@ -39,8 +39,10 @@ class GroqProvider implements LLMProvider {
 
   async generate(prompt: string, schema?: object): Promise<unknown> {
     const params: Record<string, unknown> = {
-      model: "llama-3.3-70b-versatile",
+      model: "qwen/qwen3.6-27b",
       messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      top_p: 0.80,
     };
     if (schema) {
       params.response_format = { type: "json_object" };
@@ -142,6 +144,8 @@ export class LLMService {
         "inclusion": [{"field": "string", "expected": "string|null", "description": "string"}],
         "exclusion": [{"field": "string", "expected": "string|null", "description": "string"}]
       }
+      
+      Important: Use standard medical field names like "diagnosis_codes", "age", "gender", "allergies", "medications", "pdl1_expression", "braf_mutation", "prior_therapy".
       
       Protocol text:
       ${protocolText}`,

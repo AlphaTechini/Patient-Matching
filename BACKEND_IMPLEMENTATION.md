@@ -292,5 +292,8 @@ Now ready to implement frontend integration following the stages:
 - `TRIALS_API_KEY=mock-trials-key`
 - `AGENT_KEY=mock-agent-key`
 - `EHR_BASE_URL=http://localhost:3008`
+- `LLM_PROVIDER=groq`
+- `GROQ_API_KEY=` (add your Groq API key here)
 - Server running with MockTEEClient (no T3N credentials needed for demo)
 - Ready for real TEE deployment when credentials are provided
+- **LLM:** Qwen 3.6 27B via Groq (~500 TPS)

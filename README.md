@@ -118,7 +118,8 @@ Copy `server/.env.example` to `server/.env` and fill in your values:
 # Terminal 3 API Key (from https://www.terminal3.io/claim-page)
 T3N_API_KEY=
 
-# Agent Key (separate key for the matching agent)
+# Agent Key (Ethereum private key for the matching agent - generate your own)
+# You can generate one at https://vanity-eth.tk/ or use: openssl rand -hex 32
 AGENT_KEY=
 
 # EHR System API Key (mock or test key for hospital EHR integration)
@@ -127,12 +128,24 @@ EHR_API_KEY=
 # Clinical Trials System API Key (mock or test key for trials API)
 TRIALS_API_KEY=
 
-# Populated after running setup.ts
+# EHR Base URL (your backend API URL)
+EHR_BASE_URL=http://localhost:3008
+
+# LLM Configuration (Qwen 3.6 27B via Groq)
+LLM_PROVIDER=groq
+GROQ_API_KEY=
+
+# ─── Populated after running setup.ts ─────────────────────────────────────────
+# Paste the DID values output by setup.ts here
 PHARMA_TENANT_DID=
 HOSPITAL_TENANT_DID=
 ```
 
-> **Note:** `T3N_API_KEY` and `AGENT_KEY` come from the Terminal 3 claim page. Values only appear once — save them immediately. `EHR_API_KEY` and `TRIALS_API_KEY` can be mock values for the hackathon (they get sealed inside the TEE).
+> **Note:** 
+> - `T3N_API_KEY` comes from the [Terminal 3 claim page](https://www.terminal3.io/claim-page) - save it immediately as it only appears once
+> - `AGENT_KEY` is an Ethereum private key for your matching agent - generate a new one (never use a wallet key!)
+> - `GROQ_API_KEY` get your free key from [console.groq.com](https://console.groq.com/) for LLM capabilities
+> - `EHR_API_KEY` and `TRIALS_API_KEY` can be mock values (they get sealed inside the TEE)
 
 ---
 
