@@ -1,7 +1,50 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { identityStore } from '$lib/stores/identity.svelte';
+	import { API_BASE } from '$lib/config';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
 	import TeeSecuredBadge from '$lib/components/TeeSecuredBadge.svelte';
+	
+	interface Trial {
+		id: string;
+		name: string;
+		phase: string;
+		indication: string;
+		sponsor: string;
+		description: string;
+		criteria: {
+			inclusion: Array<{ field: string; expected: string | null; description?: string }>;
+			exclusion: Array<{ field: string; expected: string | null; description?: string }>;
+		};
+	}
+	
+	let trials = $state<Trial[]>([]);
+	let loading = $state(true);
+	let error = $state('');
+	
+	onMount(async () => {
+		// Check auth
+		identityStore.restore();
+		if (!identityStore.isAuthenticated) {
+			goto('/login');
+			return;
+		}
+		
+		// Fetch trials
+		try {
+			const response = await fetch(`${API_BASE}/api/trials/all`);
+			if (!response.ok) throw new Error('Failed to fetch trials');
+			
+			const data = await response.json();
+			trials = data.trials || [];
+		} catch (err: any) {
+			error = err.message || 'Failed to load trials';
+		} finally {
+			loading = false;
+		}
+	});
 </script>
 
 <TopBar title="Trial Matches" />
@@ -22,114 +65,87 @@
 	<!-- Summary Stats Strip -->
 	<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-stack-lg border-b border-[var(--color-tm-border)] pb-8">
 		<div class="pl-4 border-l-2 border-primary">
-			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Highly Compatible</p>
-			<p class="text-headline-lg font-bold text-primary">3</p>
+			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Available Trials</p>
+			<p class="text-headline-lg font-bold text-primary">{trials.length}</p>
 		</div>
 		<div class="pl-4 border-l-2 border-[var(--color-tm-warning)]">
-			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Pending Review</p>
-			<p class="text-headline-lg font-bold text-on-surface">1</p>
+			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phase III</p>
+			<p class="text-headline-lg font-bold text-on-surface">{trials.filter(t => t.phase === 'III').length}</p>
 		</div>
 		<div class="pl-4 border-l-2 border-[var(--color-tm-success)]">
-			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Enrolled</p>
-			<p class="text-headline-lg font-bold text-on-surface">0</p>
+			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phase II</p>
+			<p class="text-headline-lg font-bold text-on-surface">{trials.filter(t => t.phase === 'II').length}</p>
 		</div>
 		<div class="pl-4 border-l-2 border-outline-variant/30">
-			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Not Eligible</p>
-			<p class="text-headline-lg font-bold text-on-surface-variant">12</p>
+			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phase I</p>
+			<p class="text-headline-lg font-bold text-on-surface-variant">{trials.filter(t => t.phase === 'I').length}</p>
 		</div>
 	</div>
 
 	<!-- Match Cards List -->
-	<div class="space-y-6">
-		
-		<!-- Trial Card 1: Eligible -->
-		<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-6 inner-glow hover:border-primary/50 transition-colors relative overflow-hidden group">
-			<!-- Subtle glow effect behind card -->
-			<div class="absolute -inset-px bg-gradient-to-r from-primary/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-			
-			<div class="relative z-10 flex flex-col lg:flex-row justify-between gap-6">
-				<!-- Left side: Info -->
-				<div class="flex-1">
-					<div class="flex items-center gap-3 mb-2">
-						<StatusChip status="Eligible" />
-						<span class="text-label-sm text-on-surface-variant">Phase III &bull; Oncology</span>
-					</div>
-					<h3 class="text-headline-md font-bold text-on-surface mb-2">Phase III NSCLC Immunotherapy Trial</h3>
-					<p class="text-body-md text-on-surface-variant mb-4 max-w-3xl">A randomized, double-blind study evaluating the efficacy and safety of a novel PD-L1 inhibitor in patients with advanced non-small cell lung cancer.</p>
-					
-					<div class="flex flex-wrap gap-2 mb-4">
-						<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
-							<span class="material-symbols-outlined text-[14px]">science</span>
-							GenoPharma Inc.
-						</span>
-						<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
-							<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">local_hospital</span>
-							University College Hospital
-						</span>
-						<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
-							<span class="material-symbols-outlined text-[14px]">location_on</span>
-							London, UK (12 miles)
-						</span>
-					</div>
-				</div>
-				
-				<!-- Right side: Score & Action -->
-				<div class="lg:w-64 shrink-0 flex flex-col justify-between items-start lg:items-end border-t lg:border-t-0 lg:border-l border-[var(--color-tm-border)] pt-4 lg:pt-0 lg:pl-6">
-					<div class="text-left lg:text-right w-full mb-4 lg:mb-0">
-						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">TEE Match Score</p>
-						<div class="flex items-end lg:justify-end gap-2">
-							<span class="text-display-xl font-bold text-primary leading-none text-glow">94%</span>
-						</div>
-						<div class="mt-2 flex lg:justify-end">
-							<TeeSecuredBadge label="14 criteria met" />
-						</div>
-					</div>
-					
-					<div class="flex flex-col sm:flex-row lg:flex-col gap-2 w-full mt-4">
-						<a href="/trial/1" class="btn-primary w-full justify-center">Review Trial Details</a>
-						<button class="btn-ghost w-full justify-center">Express Interest</button>
-					</div>
-				</div>
+	{#if loading}
+		<div class="flex items-center justify-center py-12">
+			<div class="text-center">
+				<div class="inline-block w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
+				<p class="text-body-md text-on-surface-variant">Loading trials...</p>
 			</div>
 		</div>
-
-		<!-- Trial Card 2: Reviewing -->
-		<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-6 inner-glow hover:border-[var(--color-tm-indigo)]/50 transition-colors relative overflow-hidden group">
-			<div class="relative z-10 flex flex-col lg:flex-row justify-between gap-6">
-				<div class="flex-1">
-					<div class="flex items-center gap-3 mb-2">
-						<StatusChip status="Reviewing" />
-						<span class="text-label-sm text-on-surface-variant">Phase II &bull; Oncology</span>
-					</div>
-					<h3 class="text-headline-md font-bold text-on-surface mb-2">Advanced Melanoma Combination Therapy</h3>
-					<p class="text-body-md text-on-surface-variant mb-4 max-w-3xl">Evaluating safety and tolerability of combination therapy in patients with BRAF V600E mutated unresectable melanoma.</p>
-					
-					<div class="flex flex-wrap gap-2 mb-4">
-						<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
-							<span class="material-symbols-outlined text-[14px]">science</span>
-							Nexus Labs
-						</span>
-						<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
-							<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">local_hospital</span>
-							Mayo Clinic
-						</span>
-					</div>
-				</div>
-				
-				<div class="lg:w-64 shrink-0 flex flex-col justify-between items-start lg:items-end border-t lg:border-t-0 lg:border-l border-[var(--color-tm-border)] pt-4 lg:pt-0 lg:pl-6">
-					<div class="text-left lg:text-right w-full mb-4 lg:mb-0">
-						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">TEE Match Score</p>
-						<div class="flex items-end lg:justify-end gap-2">
-							<span class="text-display-xl font-bold text-[var(--color-tm-indigo)] leading-none text-glow">88%</span>
-						</div>
-						<div class="mt-2 flex lg:justify-end">
-							<TeeSecuredBadge label="1 missing test" />
-						</div>
-					</div>
-					<a href="/trial/2" class="btn-ghost w-full justify-center">View Missing Criteria</a>
-				</div>
-			</div>
+	{:else if error}
+		<div class="bg-[var(--color-tm-danger)]/10 border border-[var(--color-tm-danger)]/20 rounded-lg p-6 text-center">
+			<span class="material-symbols-outlined text-[var(--color-tm-danger)] text-[48px] mb-3 block">error</span>
+			<p class="text-body-md text-[var(--color-tm-danger)]">{error}</p>
 		</div>
-		
-	</div>
+	{:else if trials.length === 0}
+		<div class="text-center py-12">
+			<span class="material-symbols-outlined text-on-surface-variant text-[64px] mb-4 block">clinical_notes</span>
+			<p class="text-headline-sm text-on-surface mb-2">No Trials Available</p>
+			<p class="text-body-md text-on-surface-variant">Check back later for new trial opportunities.</p>
+		</div>
+	{:else}
+		<div class="space-y-6">
+			{#each trials as trial, index}
+				<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-xl p-6 inner-glow hover:border-primary/50 transition-colors relative overflow-hidden group">
+					<!-- Subtle glow effect behind card -->
+					<div class="absolute -inset-px bg-gradient-to-r from-primary/10 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+					
+					<div class="relative z-10 flex flex-col lg:flex-row justify-between gap-6">
+						<!-- Left side: Info -->
+						<div class="flex-1">
+							<div class="flex items-center gap-3 mb-2">
+								<span class="px-2 py-1 rounded bg-primary/10 text-primary text-label-sm font-medium">Phase {trial.phase}</span>
+								<span class="text-label-sm text-on-surface-variant">{trial.indication}</span>
+							</div>
+							<h3 class="text-headline-md font-bold text-on-surface mb-2">{trial.name}</h3>
+							<p class="text-body-md text-on-surface-variant mb-4 max-w-3xl">{trial.description}</p>
+							
+							<div class="flex flex-wrap gap-2 mb-4">
+								<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant">
+									<span class="material-symbols-outlined text-[14px]">science</span>
+									{trial.sponsor}
+								</span>
+								<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant font-mono-data">
+									{trial.criteria.inclusion.length} inclusion criteria
+								</span>
+								<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-surface-container border border-[var(--color-tm-border)] text-label-sm text-on-surface-variant font-mono-data">
+									{trial.criteria.exclusion.length} exclusion criteria
+								</span>
+							</div>
+						</div>
+						
+						<!-- Right side: Action -->
+						<div class="lg:w-64 shrink-0 flex flex-col justify-center items-start lg:items-end border-t lg:border-t-0 lg:border-l border-[var(--color-tm-border)] pt-4 lg:pt-0 lg:pl-6">
+							<div class="flex flex-col gap-2 w-full">
+								<a href="/trial/{trial.id}" class="btn-primary w-full justify-center">
+									Check Eligibility
+								</a>
+								<p class="text-label-sm text-on-surface-variant text-center">
+									Matching runs in TEE enclave
+								</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{/if}
 </main>
