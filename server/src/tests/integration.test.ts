@@ -10,13 +10,15 @@
  * 6. Results verification
  */
 
+import { config } from "dotenv";
 import { describe, it, before, after } from "node:test";
 import assert from "node:assert";
 import { connectDatabase, closeDatabase, getPatientCredentialsCollection, getTrialsCollection, getAgentsCollection } from "../services/database";
 import { createPatientAccount, getPatientClient, storePatientHealthData } from "../services/patient-onboarding";
 import { deployAgent, runAgent } from "../services/agent-deployment";
-import { readFile } from "fs/promises";
-import { join } from "path";
+
+// Load environment variables
+config();
 
 // Test configuration
 const TEST_EMAIL = "test-patient@example.com";
