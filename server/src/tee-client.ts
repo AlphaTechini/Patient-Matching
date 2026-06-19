@@ -25,23 +25,23 @@ export class TEEClient implements ITeeClient {
   async initialize() {
     setEnvironment("testnet");
 
-    const agentKey = process.env.AGENT_KEY!;
+    // Use T3N_API_KEY which has credits (AGENT_KEY was randomly generated with 0 credits)
     const t3nApiKey = process.env.T3N_API_KEY!;
     const pharmaTenantDid = process.env.PHARMA_TENANT_DID!;
     const hospitalTenantDid = process.env.HOSPITAL_TENANT_DID!;
 
-    if (!agentKey || !t3nApiKey || !pharmaTenantDid || !hospitalTenantDid) {
+    if (!t3nApiKey || !pharmaTenantDid || !hospitalTenantDid) {
       throw new Error("Missing required environment variables for TEE client initialization");
     }
 
     const wasmComponent = await loadWasmComponent();
 
-    // Agent client
-    const agentAddress = eth_get_address(agentKey);
+    // Agent client using T3N_API_KEY (has 20k credits from claim page)
+    const agentAddress = eth_get_address(t3nApiKey);
     this.agentClient = new T3nClient({
       wasmComponent,
       handlers: {
-        EthSign: metamask_sign(agentAddress, undefined, agentKey),
+        EthSign: metamask_sign(agentAddress, undefined, t3nApiKey),
       },
     });
     await this.agentClient.handshake();

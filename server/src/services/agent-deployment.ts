@@ -1,4 +1,3 @@
-import { Wallet } from "ethers";
 import {
   T3nClient,
   setEnvironment,
@@ -7,6 +6,7 @@ import {
   metamask_sign,
   getScriptVersion,
   getNodeUrl,
+  eth_get_address,
 } from "@terminal3/t3n-sdk";
 import { getAgentsCollection, getPatientCredentialsCollection, type Agent } from "./database";
 import { encryptPrivateKey, decryptPrivateKey, getPatientClient } from "./patient-onboarding";
@@ -25,22 +25,28 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
   // 1. Generate agent name if not provided
   const finalAgentName = agentName || `${trialName} Agent`;
 
-  // 2. Create agent wallet and DID
-  const agentWallet = Wallet.createRandom();
+  // 2. Use T3N_API_KEY for agents (has credits from claim page)
+  // Note: Creating random wallets results in 0 credits since tokens are non-transferable
+  const agentPrivateKey = process.env.T3N_API_KEY!;
+  if (!agentPrivateKey) {
+    throw new Error("T3N_API_KEY not set in environment");
+  }
+
+  const agentAddress = eth_get_address(agentPrivateKey);
   const wasmComponent = await loadWasmComponent();
 
   const agentClient = new T3nClient({
     wasmComponent,
     handlers: {
-      EthSign: metamask_sign(agentWallet.address, undefined, agentWallet.privateKey),
+      EthSign: metamask_sign(agentAddress, undefined, agentPrivateKey),
     },
   });
 
   await agentClient.handshake();
-  const authResult = await agentClient.authenticate(createEthAuthInput(agentWallet.address));
+  const authResult = await agentClient.authenticate(createEthAuthInput(agentAddress));
   const agentDid = authResult.value;
 
-  console.log(`✅ Created agent DID: ${agentDid}`);
+  console.log(`✅ Using agent DID: ${agentDid} (T3N_API_KEY account with credits)`);
 
   // 3. Store agent in database
   const agentsCollection = getAgentsCollection();
@@ -48,8 +54,8 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
     agentName: finalAgentName,
     agentDid,
     trialId,
-    ethAddress: agentWallet.address,
-    encryptedPrivateKey: encryptPrivateKey(agentWallet.privateKey),
+    ethAddress: agentAddress,
+    encryptedPrivateKey: encryptPrivateKey(agentPrivateKey),
     status: "active",
     createdAt: new Date(),
     stats: {

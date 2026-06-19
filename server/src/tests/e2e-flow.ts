@@ -9,6 +9,7 @@ import { config } from "dotenv";
 import { connectDatabase, closeDatabase, getPatientCredentialsCollection, getPatientMetadataCollection, getTrialsCollection, getAgentsCollection } from "../services/database";
 import { createPatientAccount } from "../services/patient-onboarding";
 import { deployAgent, runAgent } from "../services/agent-deployment";
+import { TEEClient } from "../tee-client";
 
 // Load environment variables
 config();
@@ -151,7 +152,13 @@ async function main() {
     console.log(`   ✅ Trial ID: ${TEST_TRIAL_ID}`);
     console.log(`   ✅ Trial Name: ${TEST_TRIAL_NAME}`);
     console.log(`   ✅ Inclusion Criteria: ${trialData.criteria.inclusion.length}`);
-    console.log(`   ✅ Exclusion Criteria: ${trialData.criteria.exclusion.length}\n`);
+    console.log(`   ✅ Exclusion Criteria: ${trialData.criteria.exclusion.length}`);
+
+    // Publish trial to TEE
+    console.log(`   📤 Publishing trial to TEE...`);
+    const teeClient = new TEEClient();
+    await teeClient.publishTrial(TEST_TRIAL_ID, trialData.criteria);
+    console.log(`   ✅ Trial published to TEE\n`);
 
     // Step 5: Deploy agent
     console.log("🤖 Step 5: Deploying matching agent...");
