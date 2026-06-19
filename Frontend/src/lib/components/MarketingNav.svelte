@@ -16,13 +16,5 @@
 			<a href="#privacy" class="text-label-md text-on-surface-variant hover:text-primary transition-colors">Privacy First</a>
 			<a href="#institutions" class="text-label-md text-on-surface-variant hover:text-primary transition-colors">For Institutions</a>
 		</div>
-
-		<div class="flex items-center space-x-4">
-			<a href="/login" class="hidden md:block btn-ghost">Sign In</a>
-			<a href="/login" class="btn-primary">
-				Get Started
-				<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-			</a>
-		</div>
 	</div>
 </nav>
