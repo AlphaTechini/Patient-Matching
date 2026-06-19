@@ -294,13 +294,63 @@ const agentDid = `did:t3n:agent-${trialId}`;
 
 ---
 
-#### **8.3 Agent Result Aggregation**
+#### **8.3 Agent Result Caching & Database Storage**
 
-**Decision:** Return detailed results for eligible patients, aggregated data for non-eligible.
+**Decision:** Agent stores ALL match results (eligible AND non-eligible) in database during batch run.
 
-**Summary Structure:**
+**Problem with Original Design:**
+```json
+// Agent only returned eligible patients
+{
+  "eligiblePatients": [{"patientDid": "did:t3n:patient-001", ...}],
+  "summary": {"screened": 50, "eligible": 2, "notEligible": 48}
+}
+```
+- ❌ No data for 48 non-eligible patients
+- ❌ When non-eligible patient visits trial → Must run TEE check again
+- ❌ Cache only helps 2/50 patients (4%)
+- ❌ Defeats purpose of batch matching
 
-**For Eligible Patients (All Criteria Met):**
+**Corrected Architecture:**
+```typescript
+// Agent stores EVERY result in database
+for (const patientDid of allPatients) {
+  const result = await teeClient.checkEligibility(trialId, patientDid);
+  
+  await cacheMatchResult({
+    trialId,
+    patientDid,
+    eligible: result.eligible,
+    confidence: result.confidence,
+    matchedCriteria: result.matched_criteria,
+    totalCriteria: result.total_criteria,
+    checkedAt: new Date(),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+  });
+}
+```
+
+**Benefits:**
+- ✅ Agent runs once → Caches 50/50 patients (100%)
+- ✅ Patient visits trial page → Fetch from cache (no TEE call)
+- ✅ Works for both eligible AND non-eligible patients
+- ✅ Only re-runs TEE if:
+  - Cache expired (> 7 days)
+  - Patient updated health records
+  - Trial criteria changed
+
+**Cache Invalidation:**
+```typescript
+// When patient uploads new health records
+await invalidatePatientMatches(patientDid);
+
+// When trial criteria changes
+await invalidateTrialMatches(trialId);
+```
+
+**API Response Format:**
+
+**Pharma Agent Run (for pharma dashboard):**
 ```json
 {
   "eligiblePatients": [
@@ -309,40 +359,39 @@ const agentDid = `did:t3n:agent-${trialId}`;
       "confidence": 0.95,
       "matchedCriteria": 10,
       "totalCriteria": 10
-    },
-    {
-      "patientDid": "did:t3n:patient-042",
-      "confidence": 1.0,
-      "matchedCriteria": 10,
-      "totalCriteria": 10
     }
   ],
   "summary": {
     "screened": 50,
     "eligible": 2,
-    "eligibilityRate": "4%",
-    "averageConfidence": 0.975
+    "eligibilityRate": "4%"
   }
 }
 ```
 
-**For Non-Eligible Patients (Aggregated Only):**
+**Patient Individual Check (with cache):**
 ```json
 {
-  "summary": {
-    "screened": 50,
-    "eligible": 2,
-    "notEligible": 48,
-    "failedAllCriteria": 30,
-    "failedSomeCriteria": 18
+  "eligibility": {
+    "eligible": false,
+    "confidence": 0.45,
+    "matched_criteria": 3,
+    "total_criteria": 10,
+    "details": "AI-generated explanation here..."
+  },
+  "cached": true,
+  "trial": {
+    "id": "TRIAL-2026-001",
+    "name": "NSCLC Immunotherapy"
   }
 }
 ```
 
-**MVP Scope:**
-- ✅ Return full details for patients who meet ALL criteria
-- ❌ Don't return partial matches (failed 1-2 criteria) - Future feature
-- ❌ Don't expose reasons for failure (would leak PHI)
+**Files Changed:**
+- `server/src/services/match-cache.ts` - Cache management service
+- `server/src/services/agent-deployment.ts` - Store results during batch run
+- `server/src/routes/trials.ts` - Check cache before TEE call
+- `server/src/routes/patients-new.ts` - Invalidate cache on upload
 
 ---
 

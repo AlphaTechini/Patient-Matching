@@ -10,6 +10,7 @@ import {
 } from "@terminal3/t3n-sdk";
 import { getAgentsCollection, getPatientCredentialsCollection, type Agent } from "./database";
 import { getPatientClient } from "./patient-onboarding";
+import { cacheMatchResult } from "./match-cache";
 
 export interface DeployAgentResult {
   agentName: string;
@@ -273,8 +274,18 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
         totalCriteria: eligibility.total_criteria,
       });
 
+      // Cache result for future lookups
+      await cacheMatchResult({
+        trialId: agent.trialId,
+        patientDid,
+        eligible: eligibility.eligible,
+        confidence: eligibility.confidence,
+        matchedCriteria: eligibility.matched_criteria,
+        totalCriteria: eligibility.total_criteria,
+      });
+
       console.log(
-        `${eligibility.eligible ? "✅" : "❌"} Patient ${patientDid}: ${eligibility.matched_criteria}/${eligibility.total_criteria} (confidence: ${eligibility.confidence})`,
+        `${eligibility.eligible ? "✅" : "❌"} Patient ${patientDid}: ${eligibility.matched_criteria}/${eligibility.total_criteria} (confidence: ${eligibility.confidence}) - cached`,
       );
     } catch (error) {
       console.error(`❌ Failed to check eligibility for ${patientDid}:`, error);

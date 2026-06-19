@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import type { LLMService } from "../llm";
 import type { ITeeClient } from "../tee-client";
+import { getCachedMatchResult, cacheMatchResult, invalidateTrialMatches } from "../services/match-cache";
 
 interface TrialsRoutesOptions extends FastifyPluginOptions {
   llm: LLMService;
@@ -243,24 +244,73 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
         return reply.status(404).send({ error: "Trial not found" });
       }
 
-      if (!teeClient) {
-        return reply.status(503).send({ error: "TEE client not configured" });
-      }
-
-      fastify.log.info({ trialId: id, patientDid }, "Checking eligibility via TEE");
-
-      try {
-        const result = await teeClient.checkEligibility(id, patientDid);
+      // Check cache first
+      const cached = await getCachedMatchResult(id, patientDid);
+      if (cached) {
+        fastify.log.info({ trialId: id, patientDid }, "Returning cached eligibility result");
         
         return {
           success: true,
-          eligibility: result,
+          eligibility: {
+            eligible: cached.eligible,
+            confidence: cached.confidence,
+            matched_criteria: cached.matchedCriteria,
+            total_criteria: cached.totalCriteria,
+            details: cached.details,
+          },
           trial: {
             id: trial.id,
             name: trial.name,
             phase: trial.phase,
             indication: trial.indication,
           },
+          cached: true,
+        };
+      }
+
+      if (!teeClient) {
+        return reply.status(503).send({ error: "TEE client not configured" });
+      }
+
+      fastify.log.info({ trialId: id, patientDid }, "Checking eligibility via TEE (cache miss)");
+
+      try {
+        const result = await teeClient.checkEligibility(id, patientDid);
+        
+        // Generate AI explanation if available
+        let details: string | undefined;
+        if (llmService) {
+          try {
+            details = await llmService.generateExplanation(id, result) as string;
+          } catch (err) {
+            fastify.log.warn({ err }, "Failed to generate AI explanation");
+          }
+        }
+
+        // Cache the result for future lookups
+        await cacheMatchResult({
+          trialId: id,
+          patientDid,
+          eligible: result.eligible,
+          confidence: result.confidence,
+          matchedCriteria: result.matched_criteria,
+          totalCriteria: result.total_criteria,
+          details,
+        });
+        
+        return {
+          success: true,
+          eligibility: {
+            ...result,
+            details,
+          },
+          trial: {
+            id: trial.id,
+            name: trial.name,
+            phase: trial.phase,
+            indication: trial.indication,
+          },
+          cached: false,
         };
       } catch (error) {
         fastify.log.error({ error, trialId: id, patientDid }, "Eligibility check failed");
@@ -271,6 +321,29 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
         
         return reply.status(500).send({ error: "Failed to check eligibility" });
       }
+    },
+  );
+
+  // Invalidate trial matches (when trial criteria changes)
+  fastify.delete<{ Params: { id: string } }>(
+    "/trials/:id/matches",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      await invalidateTrialMatches(id);
+
+      return { success: true, message: `Match cache cleared for trial ${id}` };
     },
   );
 }

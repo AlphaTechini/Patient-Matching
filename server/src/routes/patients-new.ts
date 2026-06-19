@@ -3,6 +3,7 @@ import { getPatientCredentialsCollection, getPatientMetadataCollection } from ".
 import { createPatientAccount, getPatientClient, storePatientHealthData } from "../services/patient-onboarding";
 import { authorizeAllAgentsForPatient } from "../services/agent-deployment";
 import { extractTextFromPdf, validatePdfBuffer } from "../services/pdf-extractor";
+import { invalidatePatientMatches } from "../services/match-cache";
 
 interface PatientsRoutesOptions extends FastifyPluginOptions {
   useDatabase: boolean;
@@ -223,6 +224,10 @@ export async function patientsRoutes(fastify: FastifyInstance, opts: PatientsRou
         },
         { upsert: true },
       );
+
+      // Invalidate cached match results since patient data changed
+      await invalidatePatientMatches(patientDid);
+      fastify.log.info({ patientDid }, "Invalidated match cache after health record upload");
 
       return {
         success: true,
