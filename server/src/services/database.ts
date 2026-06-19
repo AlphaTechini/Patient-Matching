@@ -42,7 +42,8 @@ export interface PatientCredentials {
   lastLogin?: Date;
 }
 
-// Patient metadata (NOT medical data) - stored in MongoDB
+// Patient metadata and health records - stored in MongoDB
+// NOTE: For MVP, we're storing health records here. In production, move to T3N profiles.
 export interface PatientMetadata {
   patientDid: string;
   uploadStatus: {
@@ -50,6 +51,10 @@ export interface PatientMetadata {
     lastUploadedAt?: Date;
     fileName?: string;
     fileSize?: number;
+  };
+  healthRecords?: {
+    pdfText: string;           // Extracted PDF text (for MVP - move to T3N in production)
+    uploadedAt: string;
   };
   preferences?: {
     notifications: boolean;
@@ -74,6 +79,31 @@ export interface Agent {
   };
 }
 
+// Trial data - can be stored in MongoDB for persistence (currently in-memory in trials.ts)
+export interface Trial {
+  id: string;
+  name: string;
+  phase: string;
+  indication: string;
+  sponsor: string;
+  description: string;
+  startDate?: string;
+  enrollmentCount?: number;
+  criteria: {
+    inclusion: Array<{
+      field: string;
+      expected: string | null;
+      description?: string;
+    }>;
+    exclusion: Array<{
+      field: string;
+      expected: string | null;
+      description?: string;
+    }>;
+  };
+  createdAt: Date;
+}
+
 export function getPatientCredentialsCollection(): Collection<PatientCredentials> {
   const database = getDatabase();
   return database.collection<PatientCredentials>("patient_credentials");
@@ -87,4 +117,9 @@ export function getPatientMetadataCollection(): Collection<PatientMetadata> {
 export function getAgentsCollection(): Collection<Agent> {
   const database = getDatabase();
   return database.collection<Agent>("agents");
+}
+
+export function getTrialsCollection(): Collection<Trial> {
+  const database = getDatabase();
+  return database.collection<Trial>("trials");
 }

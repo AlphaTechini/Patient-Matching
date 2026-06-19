@@ -29,6 +29,7 @@ await fastify.register(env, {
       GEMINI_API_KEY: { type: "string", default: "" },
       GROQ_API_KEY: { type: "string", default: "" },
       MONGODB_URI: { type: "string", default: "" },
+      WALLET_ENCRYPTION_KEY: { type: "string", default: "" },
       PORT: { type: "string", default: "3008" },
     },
   },
@@ -51,10 +52,10 @@ if (config.MONGODB_URI) {
     useDatabase = true;
     fastify.log.info("MongoDB connected successfully");
   } catch (error) {
-    fastify.log.error(error, "MongoDB connection failed — using in-memory storage");
+    fastify.log.error(error, "MongoDB connection failed — patient onboarding will not work");
   }
 } else {
-  fastify.log.warn("MONGODB_URI not configured — using in-memory storage for patient data");
+  fastify.log.warn("MONGODB_URI not configured — patient onboarding will not work without database");
 }
 
 // Use real TEE client when T3N keys are configured; otherwise fall back to mock

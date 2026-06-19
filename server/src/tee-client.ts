@@ -9,7 +9,6 @@ import {
   getScriptVersion,
 } from "@terminal3/t3n-sdk";
 import type { StructuredQuery, EligibilityResult } from "./orchestrator";
-import { getPatientData } from "./routes/patients";
 
 export interface ITeeClient {
   getMatchingTrials(query: StructuredQuery): Promise<{ id: string; name: string; criteria: unknown }[]>;
@@ -126,92 +125,7 @@ export class TEEClient implements ITeeClient {
   }
 }
 
-// ─── Local mock data for development without T3N keys ─────────────────────
-
-const MOCK_TRIALS = [
-  {
-    id: "TRIAL-2026-001",
-    name: "Lung Cancer Immunotherapy Phase III",
-    criteria: {
-      inclusion: [
-        { field: "diagnosis_codes", expected: "C34.9" },
-        { field: "age", expected: null },
-        { field: "gender", expected: "female" },
-      ],
-      exclusion: [
-        { field: "allergies", expected: "peanut" },
-      ],
-    },
-  },
-  {
-    id: "TRIAL-2026-002",
-    name: "Colorectal Cancer Checkpoint Inhibitor Phase II",
-    criteria: {
-      inclusion: [
-        { field: "diagnosis_codes", expected: "C18.7" },
-        { field: "age", expected: null },
-      ],
-      exclusion: [
-        { field: "medications", expected: "warfarin" },
-      ],
-    },
-  },
-];
-
-const MOCK_PATIENTS: Record<string, Record<string, unknown>> = {
-  "did:t3n:patient-001": {
-    diagnosis_codes: "C34.9",
-    age: 45,
-    gender: "female",
-    allergies: "none",
-  },
-  "did:t3n:patient-002": {
-    diagnosis_codes: "C34.9",
-    age: 45,
-    gender: "female",
-    allergies: "peanut",
-  },
-  "did:t3n:patient-003": {
-    diagnosis_codes: "C18.7",
-    age: 62,
-    gender: "male",
-    allergies: "none",
-    medications: "warfarin",
-  },
-};
-
-function evaluateCriteria(criteria: any, patientData: Record<string, unknown>): Omit<EligibilityResult, "trial_id"> {
-  let matched = 0;
-  let total = 0;
-  const failed: string[] = [];
-
-  for (const c of criteria.inclusion || []) {
-    total++;
-    const field = c.field as string;
-    const expected = c.expected;
-    const pv = patientData[field];
-    const passes = expected !== null && expected !== undefined ? pv === expected : pv !== undefined && pv !== null;
-    if (passes) matched++; else failed.push(field);
-  }
-
-  for (const c of criteria.exclusion || []) {
-    total++;
-    const field = c.field as string;
-    const expected = c.expected;
-    const pv = patientData[field];
-    const matches = expected !== null && expected !== undefined ? pv === expected : pv !== undefined && pv !== null;
-    if (matches) failed.push(`EXCLUDED: ${field}`);
-  }
-
-  const confidence = total > 0 ? matched / total : 0;
-  return {
-    eligible: failed.length === 0,
-    confidence,
-    matched_criteria: matched,
-    total_criteria: total,
-    failed_criteria: failed,
-  };
-}
+// ─── Local mock for development without T3N keys ─────────────────────────────
 
 export class MockTEEClient implements ITeeClient {
   async getMatchingTrials(query: StructuredQuery) {
@@ -226,35 +140,12 @@ export class MockTEEClient implements ITeeClient {
   }
 
   async checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult> {
-    // Dynamically import trials to avoid circular dependency
-    const { getTrialsStore } = await import("./routes/trials");
-    const trialsStore = getTrialsStore();
-    const trial = trialsStore.get(trialId);
-    
-    if (!trial) {
-      throw new Error(`Trial ${trialId} not found`);
-    }
-    
-    const patientData = getPatientData(patientDid);
-    if (!patientData) {
-      throw new Error(`Patient data not found for ${patientDid}`);
-    }
-    
-    const result = evaluateCriteria(trial.criteria, patientData);
-    return { trial_id: trialId, ...result };
+    // Mock implementation - not used in production (real TEE client is used)
+    throw new Error("MockTEEClient.checkEligibility: Not implemented. Use real TEEClient for testing.");
   }
 
   async getEligibleTrials(patientDid: string): Promise<EligibilityResult[]> {
-    // Dynamically import trials to avoid circular dependency
-    const { getTrialsStore } = await import("./routes/trials");
-    const trialsStore = getTrialsStore();
-    const allTrials = Array.from(trialsStore.values());
-    
-    const results: EligibilityResult[] = [];
-    for (const trial of allTrials) {
-      const result = await this.checkEligibility(trial.id, patientDid);
-      results.push(result);
-    }
-    return results;
+    // Mock implementation - not used in production (real TEE client is used)
+    throw new Error("MockTEEClient.getEligibleTrials: Not implemented. Use real TEEClient for testing.");
   }
 }

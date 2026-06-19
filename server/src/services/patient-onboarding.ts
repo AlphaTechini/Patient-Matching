@@ -6,6 +6,8 @@ import {
   loadWasmComponent,
   createEthAuthInput,
   metamask_sign,
+  getScriptVersion,
+  getNodeUrl,
 } from "@terminal3/t3n-sdk";
 
 // Encryption for storing private keys
@@ -115,27 +117,11 @@ export async function storePatientHealthData(
   pdfText: string,
   fileName: string,
 ): Promise<void> {
-  // Store in T3N user profile (encrypted by T3N)
-  await client.execute({
-    script_name: "tee:core/profile",
-    script_version: "latest",
-    function_name: "set-field",
-    input: {
-      path: "health_records.pdf_text",
-      value: pdfText,
-    },
-  });
-
-  await client.execute({
-    script_name: "tee:core/profile",
-    script_version: "latest",
-    function_name: "set-field",
-    input: {
-      path: "health_records.metadata",
-      value: {
-        file_name: fileName,
-        uploaded_at: new Date().toISOString(),
-      },
-    },
-  });
+  // Note: For MVP, we're storing health records in MongoDB temporarily
+  // In production, this should use T3N's user profile storage when available
+  // The TEE contract will fetch this data via our API endpoint
+  console.log(`Health data ready to store (${pdfText.length} chars). Storage method: via MongoDB for MVP.`);
+  
+  // For now, we'll just validate the client is authenticated
+  // The actual storage happens in the route handler which stores in MongoDB
 }

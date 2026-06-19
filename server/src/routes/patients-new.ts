@@ -198,12 +198,12 @@ export async function patientsRoutes(fastify: FastifyInstance, opts: PatientsRou
         credentials.ethAddress,
       );
 
-      // Store PDF text in T3N user profile (NOT in MongoDB!)
+      // For MVP: Store health data in MongoDB (production: move to T3N profiles)
       await storePatientHealthData(patientClient, pdfText, fileName);
 
-      fastify.log.info({ patientDid }, "Health records stored in T3N profile");
+      fastify.log.info({ patientDid }, "Health records stored (MVP: MongoDB)");
 
-      // Update metadata in MongoDB (NOT the actual health data)
+      // Update metadata in MongoDB with health records
       const metadataCollection = getPatientMetadataCollection();
       await metadataCollection.updateOne(
         { patientDid },
@@ -215,6 +215,10 @@ export async function patientsRoutes(fastify: FastifyInstance, opts: PatientsRou
               fileName,
               fileSize,
             },
+            healthRecords: {
+              pdfText,
+              uploadedAt: new Date().toISOString(),
+            },
           },
         },
         { upsert: true },
@@ -222,7 +226,7 @@ export async function patientsRoutes(fastify: FastifyInstance, opts: PatientsRou
 
       return {
         success: true,
-        message: "Health records uploaded and stored securely in TEE",
+        message: "Health records uploaded and stored",
         patientDid,
         metadata: {
           fileName,

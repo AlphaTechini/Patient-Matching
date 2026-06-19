@@ -9,6 +9,10 @@ import {
   getNodeUrl,
 } from "@terminal3/t3n-sdk";
 import { readFile } from "fs/promises";
+import { config } from "dotenv";
+
+// Load environment variables from .env file
+config();
 
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
