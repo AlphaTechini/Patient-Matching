@@ -182,4 +182,35 @@ export class LLMService {
       },
     );
   }
+
+  async parsePatientRecords(rawText: string): Promise<Record<string, unknown>> {
+    return this.provider.generate(
+      `Extract structured medical data from this patient health record text.
+      Extract ALL medical fields you can find in the document, including but not limited to:
+      - Patient demographics (age, gender, date_of_birth, ethnicity, race)
+      - Diagnoses and ICD codes (diagnosis_codes, primary_diagnosis, secondary_diagnoses)
+      - Current and past medications (medications, medication_history)
+      - Allergies (allergies, drug_allergies)
+      - Lab results and biomarkers (pdl1_expression, braf_mutation, egfr_mutation, her2_status, etc.)
+      - Vital signs (blood_pressure, heart_rate, temperature, weight, height, bmi)
+      - Treatment history (prior_therapy, surgery_history, radiation_history, chemotherapy_history)
+      - Performance status (ecog_score, karnofsky_score)
+      - Comorbidities and medical history
+      - Any other relevant clinical information
+      
+      Return a JSON object with field names as keys and extracted values.
+      Use standard medical field names where applicable.
+      If a field is not found or unclear, omit it from the response.
+      For numeric values, use numbers not strings.
+      For dates, use ISO format strings.
+      For lists (like medications or diagnoses), use arrays.
+      
+      Patient record text:
+      ${rawText}`,
+      {
+        type: "object",
+        additionalProperties: true,
+      },
+    ) as Promise<Record<string, unknown>>;
+  }
 }

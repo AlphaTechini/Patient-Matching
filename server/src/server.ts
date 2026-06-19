@@ -1,9 +1,11 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import env from "@fastify/env";
+import multipart from "@fastify/multipart";
 import { Orchestrator } from "./orchestrator";
 import { LLMService } from "./llm";
 import { TEEClient, MockTEEClient } from "./tee-client";
+import { connectDatabase, closeDatabase } from "./services/database";
 import { matchRoutes } from "./routes/match";
 import { trialsRoutes } from "./routes/trials";
 import { patientsRoutes } from "./routes/patients";
@@ -25,14 +27,34 @@ await fastify.register(env, {
       LLM_PROVIDER: { type: "string", default: "gemini" },
       GEMINI_API_KEY: { type: "string", default: "" },
       GROQ_API_KEY: { type: "string", default: "" },
+      MONGODB_URI: { type: "string", default: "" },
       PORT: { type: "string", default: "3008" },
     },
   },
 });
 
 await fastify.register(cors, { origin: true });
+await fastify.register(multipart, {
+  limits: {
+    fileSize: 20 * 1024 * 1024, // 20MB max
+  },
+});
 
 const config = (fastify as unknown as { config: Record<string, string> }).config;
+
+// Connect to MongoDB if URI is provided
+let useDatabase = false;
+if (config.MONGODB_URI) {
+  try {
+    await connectDatabase(config.MONGODB_URI);
+    useDatabase = true;
+    fastify.log.info("MongoDB connected successfully");
+  } catch (error) {
+    fastify.log.error(error, "MongoDB connection failed — using in-memory storage");
+  }
+} else {
+  fastify.log.warn("MONGODB_URI not configured — using in-memory storage for patient data");
+}
 
 // Use real TEE client when T3N keys are configured; otherwise fall back to mock
 // so the server and integration tests work without testnet credentials.
@@ -47,7 +69,7 @@ const orchestrator = new Orchestrator(llmService, teeClient);
 
 await fastify.register(matchRoutes, { prefix: "/api", orchestrator });
 await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient });
-await fastify.register(patientsRoutes, { prefix: "/api" });
+await fastify.register(patientsRoutes, { prefix: "/api", llm: llmService, useDatabase });
 
 const port = Number(config.PORT);
 
@@ -65,5 +87,13 @@ fastify.listen({ port, host: "0.0.0.0" }, (err, address) => {
 process.on("SIGTERM", async () => {
   fastify.log.info("SIGTERM received, closing server...");
   await fastify.close();
+  await closeDatabase();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  fastify.log.info("SIGINT received, closing server...");
+  await fastify.close();
+  await closeDatabase();
   process.exit(0);
 });

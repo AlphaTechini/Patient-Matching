@@ -34,11 +34,14 @@
   "dependencies": {
     "@fastify/cors": "^11.2.0",
     "@fastify/env": "^7.0.0",
+    "@fastify/multipart": "^10.0.0",
     "@google/generative-ai": "^0.24.1",
     "@terminal3/t3n-sdk": "^3.6.0",
     "@types/node": "^25.9.3",
     "fastify": "^5.8.5",
     "groq-sdk": "^1.2.1",
+    "mongodb": "^7.3.0",
+    "pdf-parse": "^2.4.5",
     "tsx": "^4.19.2",
     "typescript": "^6.0.3",
     "zod": "^4.4.3"
