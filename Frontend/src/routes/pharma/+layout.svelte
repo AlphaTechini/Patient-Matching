@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import SideNav from '$lib/components/SideNav.svelte';
 	import { page } from '$app/stores';
+	import { pharmaStore } from '$lib/stores/pharma.svelte';
 	
 	let { children } = $props();
 	
@@ -10,6 +13,18 @@
 		if (path.includes('/matches')) return 'matches';
 		if (path.includes('/audit')) return 'audit';
 		return 'trials';
+	});
+
+	onMount(() => {
+		// Check if on onboarding page
+		if ($page.url.pathname.includes('/pharma/onboarding')) {
+			return; // Allow access to onboarding page
+		}
+
+		// Redirect to onboarding if not authenticated
+		if (!pharmaStore.isAuthenticated) {
+			goto('/pharma/onboarding');
+		}
 	});
 </script>
 

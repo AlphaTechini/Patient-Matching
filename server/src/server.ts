@@ -10,6 +10,7 @@ import { matchRoutes } from "./routes/match";
 import { trialsRoutes } from "./routes/trials";
 import { patientsRoutes } from "./routes/patients-new";
 import { agentsRoutes } from "./routes/agents";
+import { pharmaRoutes } from "./routes/pharma";
 
 const fastify = Fastify({ logger: true });
 
@@ -73,6 +74,7 @@ await fastify.register(matchRoutes, { prefix: "/api", orchestrator });
 await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient });
 await fastify.register(patientsRoutes, { prefix: "/api", useDatabase });
 await fastify.register(agentsRoutes, { prefix: "/api", useDatabase });
+await fastify.register(pharmaRoutes, { prefix: "/api", useDatabase });
 
 const port = Number(config.PORT);
 
