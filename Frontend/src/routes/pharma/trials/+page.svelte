@@ -68,6 +68,10 @@
 	let runMessage = $state('');
 	let runProgress = $state({ current: 0, total: 0 });
 
+	// Trial details modal states
+	let showTrialDetailsModal = $state(false);
+	let selectedTrialForDetails = $state<Trial | null>(null);
+
 	onMount(async () => {
 		await fetchTrials();
 	});
@@ -203,6 +207,16 @@
 
 	function closeRunModal() {
 		showRunModal = false;
+	}
+
+	function openTrialDetails(trial: Trial) {
+		selectedTrialForDetails = trial;
+		showTrialDetailsModal = true;
+	}
+
+	function closeTrialDetailsModal() {
+		showTrialDetailsModal = false;
+		selectedTrialForDetails = null;
 	}
 
 	const filteredTrials = $derived(
@@ -377,6 +391,13 @@
 								</td>
 								<td class="py-3 px-4 text-right">
 									<div class="flex items-center justify-end gap-2">
+										<button 
+											class="btn-ghost py-1 px-3 text-sm flex items-center gap-1"
+											onclick={() => openTrialDetails(trial)}
+										>
+											<span class="material-symbols-outlined text-[16px]">info</span>
+											Details
+										</button>
 										{#if !agent}
 											<button 
 												class="btn-primary py-1 px-3 text-sm flex items-center gap-1"
@@ -568,6 +589,138 @@
 			</div>
 		{/if}
 	</div>
+</Modal>
+
+<!-- Trial Details Modal -->
+<Modal bind:isOpen={showTrialDetailsModal} title="Trial Details" size="lg" showCloseButton={true}>
+	{#if selectedTrialForDetails}
+		<div class="space-y-6">
+			<!-- Trial Header Info -->
+			<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4">
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Trial Name</p>
+						<p class="text-body-md font-medium text-on-surface">{selectedTrialForDetails.name}</p>
+					</div>
+					<div>
+						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Trial ID</p>
+						<p class="text-body-md font-mono text-on-surface">{selectedTrialForDetails.id}</p>
+					</div>
+					<div>
+						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Phase</p>
+						<p class="text-body-md font-medium text-primary">{selectedTrialForDetails.phase}</p>
+					</div>
+					<div>
+						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Sponsor</p>
+						<p class="text-body-md font-medium text-on-surface">{selectedTrialForDetails.sponsor}</p>
+					</div>
+					<div class="col-span-2">
+						<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">Indication</p>
+						<p class="text-body-md font-medium text-on-surface">{selectedTrialForDetails.indication}</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Description -->
+			{#if selectedTrialForDetails.description}
+				<div>
+					<h3 class="text-headline-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+						<span class="material-symbols-outlined text-primary">description</span>
+						Description
+					</h3>
+					<p class="text-body-md text-on-surface-variant leading-relaxed">
+						{selectedTrialForDetails.description}
+					</p>
+				</div>
+			{/if}
+
+			<!-- Inclusion Criteria -->
+			<div>
+				<h3 class="text-headline-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+					<span class="material-symbols-outlined text-[var(--color-tm-success)]">check_circle</span>
+					Inclusion Criteria ({selectedTrialForDetails.criteria.inclusion.length})
+				</h3>
+				<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4">
+					{#if selectedTrialForDetails.criteria.inclusion.length > 0}
+						<ul class="space-y-3">
+							{#each selectedTrialForDetails.criteria.inclusion as criterion, idx}
+								<li class="flex items-start gap-3">
+									<div class="w-6 h-6 rounded-full bg-[var(--color-tm-success)]/10 flex items-center justify-center shrink-0 mt-0.5">
+										<span class="text-[var(--color-tm-success)] text-label-sm font-bold">{idx + 1}</span>
+									</div>
+									<div class="flex-1">
+										{#if typeof criterion === 'string'}
+											<p class="text-body-md text-on-surface">{criterion}</p>
+										{:else}
+											<p class="text-body-md text-on-surface">{criterion.description || `${criterion.field}: ${criterion.expected || 'any'}`}</p>
+											{#if criterion.field && criterion.description}
+												<p class="text-label-sm text-on-surface-variant mt-1">
+													Field: <span class="font-mono">{criterion.field}</span>
+													{#if criterion.expected}
+														• Expected: <span class="font-mono">{criterion.expected}</span>
+													{/if}
+												</p>
+											{/if}
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="text-body-md text-on-surface-variant">No inclusion criteria specified</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Exclusion Criteria -->
+			<div>
+				<h3 class="text-headline-sm font-bold text-on-surface mb-3 flex items-center gap-2">
+					<span class="material-symbols-outlined text-red-500">cancel</span>
+					Exclusion Criteria ({selectedTrialForDetails.criteria.exclusion.length})
+				</h3>
+				<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4">
+					{#if selectedTrialForDetails.criteria.exclusion.length > 0}
+						<ul class="space-y-3">
+							{#each selectedTrialForDetails.criteria.exclusion as criterion, idx}
+								<li class="flex items-start gap-3">
+									<div class="w-6 h-6 rounded-full bg-red-500/10 flex items-center justify-center shrink-0 mt-0.5">
+										<span class="text-red-500 text-label-sm font-bold">{idx + 1}</span>
+									</div>
+									<div class="flex-1">
+										{#if typeof criterion === 'string'}
+											<p class="text-body-md text-on-surface">{criterion}</p>
+										{:else}
+											<p class="text-body-md text-on-surface">{criterion.description || `${criterion.field}: ${criterion.expected || 'any'}`}</p>
+											{#if criterion.field && criterion.description}
+												<p class="text-label-sm text-on-surface-variant mt-1">
+													Field: <span class="font-mono">{criterion.field}</span>
+													{#if criterion.expected}
+														• Expected: <span class="font-mono">{criterion.expected}</span>
+													{/if}
+												</p>
+											{/if}
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
+					{:else}
+						<p class="text-body-md text-on-surface-variant">No exclusion criteria specified</p>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Action Buttons -->
+			<div class="flex items-center justify-end gap-3 pt-4 border-t border-[var(--color-tm-border)]">
+				<button 
+					class="btn-ghost py-2 px-4"
+					onclick={closeTrialDetailsModal}
+				>
+					Close
+				</button>
+			</div>
+		</div>
+	{/if}
 </Modal>
 
 <!-- Agent Run Modal -->
