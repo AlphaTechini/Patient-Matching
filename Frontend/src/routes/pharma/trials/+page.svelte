@@ -348,7 +348,7 @@
 						{#each filteredTrials as trial, i}
 							{@const agent = getAgentForTrial(trial.id)}
 							{@const results = getResultsForTrial(trial.id)}
-							<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group" class:bg-[var(--color-tm-base)]/30={i % 2 === 1}>
+							<tr class="border-b border-[var(--color-tm-border)] hover:bg-[var(--color-tm-elevated)] transition-colors group" class:bg-[var(--color-tm-base-alpha)]={i % 2 === 1}>
 								<td class="py-3 px-4 font-medium text-on-surface">{trial.name}</td>
 								<td class="py-3 px-4">
 									<span class="text-[var(--color-tm-{trial.phase === 'Phase III' ? 'success' : trial.phase === 'Phase II' ? 'cyan' : 'warning'})]">

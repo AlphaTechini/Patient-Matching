@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
-import { getMongoDb } from "../services/database";
+import { getDatabase } from "../services/database";
 
 interface PharmaOrganization {
   name: string;
@@ -19,7 +19,7 @@ export async function pharmaRoutes(fastify: FastifyInstance, opts: PharmaRoutesO
 
   function getPharmaCollection() {
     if (!useDatabase) return null;
-    const db = getMongoDb();
+    const db = getDatabase();
     return db.collection<PharmaOrganization>("pharma_organizations");
   }
 
