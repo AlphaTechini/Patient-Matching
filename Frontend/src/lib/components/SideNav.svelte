@@ -15,9 +15,7 @@
 		],
 		pharma: [
 			{ id: 'trials', label: 'My Trials', icon: 'clinical_notes', href: '/pharma/trials' },
-			{ id: 'matches', label: 'Match Results', icon: 'person_search', href: '/pharma/trials' },
-			{ id: 'audit', label: 'Audit Log', icon: 'history_edu', href: '#' },
-			{ id: 'settings', label: 'Settings', icon: 'settings', href: '#' }
+			{ id: 'matches', label: 'Match Results', icon: 'person_search', href: '/pharma/matches' }
 		],
 		hospital: [
 			{ id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/hospital/trials' },

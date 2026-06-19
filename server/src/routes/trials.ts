@@ -403,6 +403,44 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
       };
     },
   );
+
+  // Get all pharma match results (all eligible matches across all trials)
+  fastify.get("/pharma/matches", async (_request, reply) => {
+    try {
+      const { getAllEligibleMatches } = await import("../services/match-cache");
+      const allMatches = await getAllEligibleMatches();
+
+      // Enrich with trial details
+      const matches = allMatches.map((result) => {
+        const trial = trialsStore.get(result.trialId);
+        
+        if (!trial) {
+          return null;
+        }
+
+        return {
+          trialId: result.trialId,
+          trialName: trial.name,
+          phase: trial.phase,
+          indication: trial.indication,
+          sponsor: trial.sponsor,
+          patientDid: result.patientDid,
+          confidence: result.confidence,
+          matchedCriteria: result.matchedCriteria,
+          totalCriteria: result.totalCriteria,
+          checkedAt: result.checkedAt,
+        };
+      }).filter(m => m !== null);
+
+      return {
+        totalMatches: matches.length,
+        matches,
+      };
+    } catch (error) {
+      fastify.log.error({ error }, "Failed to fetch pharma matches");
+      return reply.status(500).send({ error: "Failed to fetch match results" });
+    }
+  });
 }
 
 // Export function to access the trials store

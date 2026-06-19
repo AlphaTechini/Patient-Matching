@@ -99,6 +99,24 @@ export async function getTrialMatches(trialId: string): Promise<MatchResult[]> {
 }
 
 /**
+ * Get all eligible matches across all trials (used by pharma dashboard)
+ */
+export async function getAllEligibleMatches(): Promise<MatchResult[]> {
+  const matchResultsCollection = getMatchResultsCollection();
+
+  const now = new Date();
+
+  const results = await matchResultsCollection
+    .find({
+      eligible: true,
+      expiresAt: { $gt: now },
+    })
+    .toArray();
+
+  return results;
+}
+
+/**
  * Invalidate match result (e.g., when patient updates their health records)
  */
 export async function invalidatePatientMatches(patientDid: string): Promise<void> {
