@@ -13,9 +13,10 @@ import { readFile } from "fs/promises";
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const T3N_API_KEY = process.env.T3N_API_KEY;
-const EHR_API_KEY = process.env.EHR_API_KEY;
-const TRIALS_API_KEY = process.env.TRIALS_API_KEY;
+const T3N_API_KEY = process.env.T3N_API_KEY!;
+const EHR_API_KEY = process.env.EHR_API_KEY!;
+const TRIALS_API_KEY = process.env.TRIALS_API_KEY!;
+const EHR_BASE_URL = process.env.EHR_BASE_URL || "http://localhost:3008";
 
 if (!T3N_API_KEY || !EHR_API_KEY || !TRIALS_API_KEY) {
   console.error("Missing required env vars: T3N_API_KEY, EHR_API_KEY, TRIALS_API_KEY");
@@ -188,6 +189,7 @@ async function main() {
 
   console.log("\n  Seeding hospital secrets...");
   await seedSecret(hospitalTenant, "secrets", "ehr_api_key", EHR_API_KEY);
+  await seedSecret(hospitalTenant, "secrets", "ehr_base_url", EHR_BASE_URL);
 
   console.log(`\n  hospital script: ${hospitalScriptName}`);
   console.log(`  hospital contract ID: ${hospitalContractId}\n`);

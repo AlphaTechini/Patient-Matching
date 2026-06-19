@@ -12,8 +12,8 @@ import {
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const T3N_API_KEY = process.env.T3N_API_KEY;
-const AGENT_KEY = process.env.AGENT_KEY;
+const T3N_API_KEY = process.env.T3N_API_KEY!;
+const AGENT_KEY = process.env.AGENT_KEY!;
 
 if (!T3N_API_KEY || !AGENT_KEY) {
   console.error("Missing required env vars: T3N_API_KEY, AGENT_KEY");
@@ -73,8 +73,8 @@ async function main() {
   console.log(`  hospital script: ${hospitalScriptName}\n`);
 
   // Resolve current script versions
-  const pharmaVersion = await getScriptVersion(getNodeUrl(), pharmaScriptName);
-  const hospitalVersion = await getScriptVersion(getNodeUrl(), hospitalScriptName);
+  const pharmaVersion = await getScriptVersion(getNodeUrl(), pharmaScriptName) || PHARMA_SCRIPT_VERSION;
+  const hospitalVersion = await getScriptVersion(getNodeUrl(), hospitalScriptName) || HOSPITAL_SCRIPT_VERSION;
   console.log(`  pharma version: ${pharmaVersion}`);
   console.log(`  hospital version: ${hospitalVersion}\n`);
 
@@ -90,7 +90,7 @@ async function main() {
           scriptName: hospitalScriptName,
           versionReq: hospitalVersion,
           functions: ["check-eligibility"],
-          allowedHosts: ["ehr.hospital-system.com"],
+          allowedHosts: [process.env.EHR_BASE_URL?.replace(/^https?:\/\//, "") || "localhost:3008"],
         },
         {
           scriptName: pharmaScriptName,

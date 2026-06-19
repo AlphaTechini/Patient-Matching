@@ -66,7 +66,7 @@ class MockProvider implements LLMProvider {
 }
 
 export class LLMService {
-  private provider: LLMProvider;
+  public provider: LLMProvider;
 
   constructor(providerName: string) {
     const apiKey = providerName === "groq"
@@ -127,5 +127,55 @@ export class LLMService {
         items: { type: "string" },
       },
     ) as Promise<string[]>;
+  }
+
+  async parseTrialProtocol(protocolText: string) {
+    return this.provider.generate(
+      `Parse this clinical trial protocol into structured inclusion and exclusion criteria. 
+      Extract specific medical criteria that can be evaluated against patient data.
+      Return JSON matching this schema:
+      {
+        "trialName": "string",
+        "phase": "string (I, II, III, or IV)",
+        "indication": "string",
+        "description": "string (brief summary)",
+        "inclusion": [{"field": "string", "expected": "string|null", "description": "string"}],
+        "exclusion": [{"field": "string", "expected": "string|null", "description": "string"}]
+      }
+      
+      Protocol text:
+      ${protocolText}`,
+      {
+        type: "object",
+        properties: {
+          trialName: { type: "string" },
+          phase: { type: "string" },
+          indication: { type: "string" },
+          description: { type: "string" },
+          inclusion: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                field: { type: "string" },
+                expected: { type: ["string", "null"] },
+                description: { type: "string" },
+              },
+            },
+          },
+          exclusion: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                field: { type: "string" },
+                expected: { type: ["string", "null"] },
+                description: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+    );
   }
 }

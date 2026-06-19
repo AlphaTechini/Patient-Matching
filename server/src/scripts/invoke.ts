@@ -12,7 +12,10 @@ import {
 // ─── Environment ─────────────────────────────────────────────────────────────
 setEnvironment("testnet");
 
-const AGENT_KEY = process.env.AGENT_KEY;
+// ─── These get populated after running setup.ts ────────────────
+const AGENT_KEY = process.env.AGENT_KEY!;
+const PHARMA_TENANT_DID = process.env.PHARMA_TENANT_DID!;
+const HOSPITAL_TENANT_DID = process.env.HOSPITAL_TENANT_DID!;
 
 if (!AGENT_KEY || !PHARMA_TENANT_DID || !HOSPITAL_TENANT_DID) {
   console.error("Missing required env vars: AGENT_KEY, PHARMA_TENANT_DID, HOSPITAL_TENANT_DID");
@@ -23,9 +26,6 @@ if (!AGENT_KEY || !PHARMA_TENANT_DID || !HOSPITAL_TENANT_DID) {
 const PHARMA_CONTRACT_TAIL = "trial-matching";
 const HOSPITAL_CONTRACT_TAIL = "patient-screening";
 
-// ─── These get populated after running setup.ts ─────────────────────────────
-const PHARMA_TENANT_DID = process.env.PHARMA_TENANT_DID!;
-const HOSPITAL_TENANT_DID = process.env.HOSPITAL_TENANT_DID!;
 
 // ─── Test data ───────────────────────────────────────────────────────────────
 const TEST_TRIAL_ID = "TRIAL-2026-001";

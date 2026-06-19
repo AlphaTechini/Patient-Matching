@@ -1,6 +1,5 @@
 import {
   T3nClient,
-  TenantClient,
   setEnvironment,
   loadWasmComponent,
   eth_get_address,
@@ -10,18 +9,17 @@ import {
   getScriptVersion,
 } from "@terminal3/t3n-sdk";
 import type { StructuredQuery, EligibilityResult } from "./orchestrator";
+import { getPatientData } from "./routes/patients";
 
 export interface ITeeClient {
   getMatchingTrials(query: StructuredQuery): Promise<{ id: string; name: string; criteria: unknown }[]>;
   checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult>;
   getEligibleTrials(patientDid: string): Promise<EligibilityResult[]>;
+  publishTrial?(trialId: string, criteria: unknown): Promise<void>;
 }
 
 export class TEEClient implements ITeeClient {
   private agentClient: T3nClient | null = null;
-  private pharmaTenant: TenantClient | null = null;
-  private hospitalTenant: TenantClient | null = null;
-
   private pharmaScriptName = "";
   private hospitalScriptName = "";
 
@@ -49,20 +47,6 @@ export class TEEClient implements ITeeClient {
     });
     await this.agentClient.handshake();
     await this.agentClient.authenticate(createEthAuthInput(agentAddress));
-
-    // Pharma tenant
-    this.pharmaTenant = new TenantClient({
-      t3n: this.agentClient,
-      baseUrl: getNodeUrl(),
-      tenantDid: pharmaTenantDid,
-    });
-
-    // Hospital tenant
-    this.hospitalTenant = new TenantClient({
-      t3n: this.agentClient,
-      baseUrl: getNodeUrl(),
-      tenantDid: hospitalTenantDid,
-    });
 
     const pharmaTenantId = pharmaTenantDid.slice("did:t3n:".length);
     const hospitalTenantId = hospitalTenantDid.slice("did:t3n:".length);
@@ -99,13 +83,13 @@ export class TEEClient implements ITeeClient {
   async checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult> {
     await this.ensureInitialized();
 
-    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName);
+    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName) || "0.1.0";
 
     const result = await this.agentClient!.executeAndDecode({
       script_name: this.hospitalScriptName,
       script_version: hospitalVersion,
       function_name: "check-eligibility",
-      input: { trial_id: trialId },
+      input: { trial_id: trialId, patient_did: patientDid },
       pii_did: patientDid,
     }) as EligibilityResult;
 
@@ -115,17 +99,30 @@ export class TEEClient implements ITeeClient {
   async getEligibleTrials(patientDid: string): Promise<EligibilityResult[]> {
     await this.ensureInitialized();
 
-    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName);
+    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName) || "0.1.0";
 
     const result = await this.agentClient!.executeAndDecode({
       script_name: this.hospitalScriptName,
       script_version: hospitalVersion,
       function_name: "check-eligibility",
-      input: { trial_id: "TRIAL-2026-001" },
+      input: { trial_id: "TRIAL-2026-001", patient_did: patientDid },
       pii_did: patientDid,
     }) as EligibilityResult;
 
     return [result];
+  }
+
+  async publishTrial(trialId: string, criteria: unknown): Promise<void> {
+    await this.ensureInitialized();
+
+    const pharmaVersion = await getScriptVersion(getNodeUrl(), this.pharmaScriptName) || "0.1.0";
+
+    await this.agentClient!.execute({
+      script_name: this.pharmaScriptName,
+      script_version: pharmaVersion,
+      function_name: "publish-trial",
+      input: { trial_id: trialId, criteria },
+    });
   }
 }
 
@@ -218,31 +215,45 @@ function evaluateCriteria(criteria: any, patientData: Record<string, unknown>): 
 
 export class MockTEEClient implements ITeeClient {
   async getMatchingTrials(query: StructuredQuery) {
-    return MOCK_TRIALS
-      .filter(t => !query.condition || (t.name + t.id).toLowerCase().includes(query.condition.toLowerCase()))
+    // Dynamically import trials to avoid circular dependency
+    const { getTrialsStore } = await import("./routes/trials");
+    const trialsStore = getTrialsStore();
+    const allTrials = Array.from(trialsStore.values());
+    
+    return allTrials
+      .filter(t => !query.condition || (t.name + t.id + t.indication).toLowerCase().includes(query.condition.toLowerCase()))
       .map(t => ({ id: t.id, name: t.name, criteria: t.criteria }));
   }
 
   async checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult> {
-    const trial = MOCK_TRIALS.find(t => t.id === trialId);
+    // Dynamically import trials to avoid circular dependency
+    const { getTrialsStore } = await import("./routes/trials");
+    const trialsStore = getTrialsStore();
+    const trial = trialsStore.get(trialId);
+    
     if (!trial) {
       throw new Error(`Trial ${trialId} not found`);
     }
-    const patientData = MOCK_PATIENTS[patientDid] || {
-      diagnosis_codes: "C34.9",
-      age: 50,
-      gender: "female",
-      allergies: "none",
-    };
+    
+    const patientData = getPatientData(patientDid);
+    if (!patientData) {
+      throw new Error(`Patient data not found for ${patientDid}`);
+    }
+    
     const result = evaluateCriteria(trial.criteria, patientData);
     return { trial_id: trialId, ...result };
   }
 
   async getEligibleTrials(patientDid: string): Promise<EligibilityResult[]> {
+    // Dynamically import trials to avoid circular dependency
+    const { getTrialsStore } = await import("./routes/trials");
+    const trialsStore = getTrialsStore();
+    const allTrials = Array.from(trialsStore.values());
+    
     const results: EligibilityResult[] = [];
-    for (const trial of MOCK_TRIALS) {
+    for (const trial of allTrials) {
       const result = await this.checkEligibility(trial.id, patientDid);
-      if (result.eligible) results.push(result);
+      results.push(result);
     }
     return results;
   }

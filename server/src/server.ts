@@ -5,6 +5,8 @@ import { Orchestrator } from "./orchestrator";
 import { LLMService } from "./llm";
 import { TEEClient, MockTEEClient } from "./tee-client";
 import { matchRoutes } from "./routes/match";
+import { trialsRoutes } from "./routes/trials";
+import { patientsRoutes } from "./routes/patients";
 
 const fastify = Fastify({ logger: true });
 
@@ -40,12 +42,12 @@ if (!hasTeeConfig) {
   fastify.log.warn("T3N credentials incomplete — running with MockTEEClient for local development");
 }
 
-const orchestrator = new Orchestrator(
-  new LLMService(config.LLM_PROVIDER ?? "gemini"),
-  teeClient,
-);
+const llmService = new LLMService(config.LLM_PROVIDER ?? "gemini");
+const orchestrator = new Orchestrator(llmService, teeClient);
 
 await fastify.register(matchRoutes, { prefix: "/api", orchestrator });
+await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient });
+await fastify.register(patientsRoutes, { prefix: "/api" });
 
 const port = Number(config.PORT);
 

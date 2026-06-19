@@ -18,5 +18,4 @@ interface contracts {
   }
 
   check-eligibility: func(req: generic-input) -> result<list<u8>, string>;
-  get-patient-profile-fields: func(req: generic-input) -> result<list<u8>, string>;
 }

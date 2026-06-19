@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize)]
 struct CheckEligibilityInput {
     trial_id: String,
+    patient_did: String,
 }
 
 #[derive(Serialize)]
@@ -31,6 +32,15 @@ fn get_api_key() -> Result<String, String> {
     let bytes = kv_store::get(&map_name, b"ehr_api_key")
         .map_err(|e| format!("kv read: {e}"))?
         .ok_or("ehr_api_key not found in z:<tid>:secrets — populate it via the tenant SDK before use")?;
+    String::from_utf8(bytes).map_err(|e| e.to_string())
+}
+
+fn get_ehr_base_url() -> Result<String, String> {
+    let tid = tenant_context::tenant_did();
+    let map_name = format!("z:{}:secrets", hex::encode(&tid));
+    let bytes = kv_store::get(&map_name, b"ehr_base_url")
+        .map_err(|e| format!("kv read: {e}"))?
+        .ok_or("ehr_base_url not found in z:<tid>:secrets — populate it via the tenant SDK before use")?;
     String::from_utf8(bytes).map_err(|e| e.to_string())
 }
 
@@ -125,14 +135,13 @@ pub fn check_eligibility(input_bytes: &[u8]) -> Result<Vec<u8>, String> {
     let _ = logging::info(&format!("evaluating patient against trial {}", input.trial_id));
 
     // 2. Fetch patient data from hospital EHR via http-with-placeholders
-    //    {{profile.patient_id}} resolved host-side inside TDX enclave;
-    //    the resolved value never enters WASM guest memory.
+    //    patient_did is passed directly in the input
     let api_key = get_api_key()?;
-    let ehr_base = "https://ehr.hospital-system.com";
+    let ehr_base = get_ehr_base_url()?;
 
     let ehr_resp = hwp::call(&hwp::Request {
         method: hwp::Verb::Get,
-        url: format!("{ehr_base}/api/v1/patients/{{{{profile.patient_id}}}}/records"),
+        url: format!("{ehr_base}/api/patients/{}/records", input.patient_did),
         headers: Some(duffel_headers(&api_key)),
         payload: None,
     }).map_err(|e| format!("check-eligibility: ehr call: {}", format_http_error(e)))?;
