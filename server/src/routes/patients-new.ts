@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from "fastify";
 import { getPatientCredentialsCollection, getPatientMetadataCollection } from "../services/database";
 import { createPatientAccount, getPatientClient, storePatientHealthData } from "../services/patient-onboarding";
+import { authorizeAllAgentsForPatient } from "../services/agent-deployment";
 import { extractTextFromPdf, validatePdfBuffer } from "../services/pdf-extractor";
 
 interface PatientsRoutesOptions extends FastifyPluginOptions {
@@ -68,6 +69,19 @@ export async function patientsRoutes(fastify: FastifyInstance, opts: PatientsRou
           hasHealthRecords: false,
         },
       });
+
+      // Authorize all existing agents for this patient
+      try {
+        const agentsAuthorized = await authorizeAllAgentsForPatient(
+          account.patientDid,
+          account.encryptedPrivateKey,
+          account.ethAddress,
+        );
+
+        fastify.log.info({ email, patientDid: account.patientDid, agentsAuthorized }, "Patient authorized for agents");
+      } catch (error) {
+        fastify.log.warn({ email, error }, "Failed to authorize agents for patient (continuing anyway)");
+      }
 
       fastify.log.info(
         { email, patientDid: account.patientDid },

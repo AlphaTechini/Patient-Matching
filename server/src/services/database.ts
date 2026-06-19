@@ -57,6 +57,23 @@ export interface PatientMetadata {
   };
 }
 
+// Agent credentials and state - stored in MongoDB
+export interface Agent {
+  agentName: string;           // "NSCLC Immunotherapy Trial Agent"
+  agentDid: string;            // "did:t3n:abc123xyz" (SDK-generated)
+  trialId: string;             // "TRIAL-2026-001"
+  ethAddress: string;          // "0x..."
+  encryptedPrivateKey: string; // Encrypted with WALLET_ENCRYPTION_KEY
+  status: "active" | "paused" | "deleted";
+  createdAt: Date;
+  lastRunAt?: Date;
+  stats?: {
+    totalRuns: number;
+    patientsScreened: number;
+    patientsMatched: number;
+  };
+}
+
 export function getPatientCredentialsCollection(): Collection<PatientCredentials> {
   const database = getDatabase();
   return database.collection<PatientCredentials>("patient_credentials");
@@ -65,4 +82,9 @@ export function getPatientCredentialsCollection(): Collection<PatientCredentials
 export function getPatientMetadataCollection(): Collection<PatientMetadata> {
   const database = getDatabase();
   return database.collection<PatientMetadata>("patient_metadata");
+}
+
+export function getAgentsCollection(): Collection<Agent> {
+  const database = getDatabase();
+  return database.collection<Agent>("agents");
 }
