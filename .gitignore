@@ -44,3 +44,7 @@ stages.md
 
 # Testing documentation
 server/CLI_TEST_GUIDE.md
+
+# Stitch screens and images
+*.png
+*.html

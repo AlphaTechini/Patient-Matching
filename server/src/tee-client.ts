@@ -116,11 +116,17 @@ export class TEEClient implements ITeeClient {
 
     const pharmaVersion = await getScriptVersion(getNodeUrl(), this.pharmaScriptName) || "0.1.0";
 
+    // Add trial_id to criteria object for contract compatibility
+    const criteriaWithId = {
+      trial_id: trialId,
+      ...criteria as object,
+    };
+
     await this.agentClient!.execute({
       script_name: this.pharmaScriptName,
       script_version: pharmaVersion,
       function_name: "publish-trial",
-      input: { trial_id: trialId, criteria },
+      input: { trial_id: trialId, criteria: criteriaWithId },
     });
   }
 }
