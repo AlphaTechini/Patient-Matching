@@ -9,10 +9,7 @@
 		patient: [
 			{ id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
 			{ id: 'wallet', label: 'Secure Wallet', icon: 'account_balance_wallet', href: '/wallet' },
-			{ id: 'matches', label: 'Trial Matches', icon: 'biotech', href: '/matches' },
-			{ id: 'permissions', label: 'Agent Permissions', icon: 'shield_locked', href: '/permissions' },
-			{ id: 'audit', label: 'Audit Log', icon: 'history_edu', href: '/audit' },
-			{ id: 'settings', label: 'Settings', icon: 'settings', href: '#' }
+			{ id: 'matches', label: 'Trial Matches', icon: 'biotech', href: '/matches' }
 		],
 		pharma: [
 			{ id: 'trials', label: 'My Trials', icon: 'clinical_notes', href: '/pharma/trials' },

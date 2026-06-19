@@ -346,6 +346,63 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
       return { success: true, message: `Match cache cleared for trial ${id}` };
     },
   );
+  // Get patient-specific matches (eligible trials with cached results)
+  fastify.get<{ Querystring: { patientDid: string } }>(
+    "/patients/:patientDid/matches",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["patientDid"],
+          properties: {
+            patientDid: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { patientDid } = request.params;
+
+      // Get cached match results from match-cache service
+      const { getPatientMatches } = await import("../services/match-cache");
+      const matchResults = await getPatientMatches(patientDid);
+
+      // Filter only eligible matches
+      const eligibleMatches = matchResults.filter(m => m.eligible);
+
+      // Enrich with trial details
+      const matches = eligibleMatches.map((result) => {
+        const trial = trialsStore.get(result.trialId);
+        
+        if (!trial) {
+          return null;
+        }
+
+        return {
+          trialId: result.trialId,
+          trialName: trial.name,
+          phase: trial.phase,
+          indication: trial.indication,
+          sponsor: trial.sponsor,
+          description: trial.description,
+          criteria: {
+            inclusionCount: trial.criteria.inclusion.length,
+            exclusionCount: trial.criteria.exclusion.length,
+          },
+          confidence: result.confidence,
+          matchedCriteria: result.matchedCriteria,
+          totalCriteria: result.totalCriteria,
+          checkedAt: result.checkedAt,
+        };
+      }).filter(m => m !== null);
+
+      return {
+        patientDid,
+        matchCount: matches.length,
+        matches,
+      };
+    },
+  );
 }
 
 // Export function to access the trials store
