@@ -62,13 +62,14 @@ export interface PatientMetadata {
   };
 }
 
-// Agent credentials and state - stored in MongoDB
+// Agent records - stored in MongoDB
+// Note: For MVP, all agents share the same DID (T3N_API_KEY account)
 export interface Agent {
   agentName: string;           // "NSCLC Immunotherapy Trial Agent"
-  agentDid: string;            // "did:t3n:abc123xyz" (SDK-generated)
-  trialId: string;             // "TRIAL-2026-001"
-  ethAddress: string;          // "0x..."
-  encryptedPrivateKey: string; // Encrypted with WALLET_ENCRYPTION_KEY
+  agentDid: string;            // Shared DID from T3N_API_KEY (same for all agents)
+  trialId: string;             // "TRIAL-2026-001" (distinguishes agents)
+  ethAddress: string;          // "0x..." (from T3N_API_KEY)
+  encryptedPrivateKey: string; // Empty string - uses T3N_API_KEY from env
   status: "active" | "paused" | "deleted";
   createdAt: Date;
   lastRunAt?: Date;

@@ -9,7 +9,7 @@ import {
   eth_get_address,
 } from "@terminal3/t3n-sdk";
 import { getAgentsCollection, getPatientCredentialsCollection, type Agent } from "./database";
-import { encryptPrivateKey, decryptPrivateKey, getPatientClient } from "./patient-onboarding";
+import { getPatientClient } from "./patient-onboarding";
 
 export interface DeployAgentResult {
   agentName: string;
@@ -25,37 +25,36 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
   // 1. Generate agent name if not provided
   const finalAgentName = agentName || `${trialName} Agent`;
 
-  // 2. Use T3N_API_KEY for agents (has credits from claim page)
-  // Note: Creating random wallets results in 0 credits since tokens are non-transferable
-  const agentPrivateKey = process.env.T3N_API_KEY!;
-  if (!agentPrivateKey) {
+  // 2. Get DID from T3N_API_KEY (all agents share this DID for MVP)
+  const t3nApiKey = process.env.T3N_API_KEY!;
+  if (!t3nApiKey) {
     throw new Error("T3N_API_KEY not set in environment");
   }
 
-  const agentAddress = eth_get_address(agentPrivateKey);
+  const agentAddress = eth_get_address(t3nApiKey);
   const wasmComponent = await loadWasmComponent();
 
-  const agentClient = new T3nClient({
+  const client = new T3nClient({
     wasmComponent,
     handlers: {
-      EthSign: metamask_sign(agentAddress, undefined, agentPrivateKey),
+      EthSign: metamask_sign(agentAddress, undefined, t3nApiKey),
     },
   });
 
-  await agentClient.handshake();
-  const authResult = await agentClient.authenticate(createEthAuthInput(agentAddress));
+  await client.handshake();
+  const authResult = await client.authenticate(createEthAuthInput(agentAddress));
   const agentDid = authResult.value;
 
-  console.log(`✅ Using agent DID: ${agentDid} (T3N_API_KEY account with credits)`);
+  console.log(`✅ Agent DID: ${agentDid} (shared T3N_API_KEY account)`);
 
-  // 3. Store agent in database
+  // 3. Store agent in database (no wallet storage needed)
   const agentsCollection = getAgentsCollection();
   const agent: Agent = {
     agentName: finalAgentName,
     agentDid,
     trialId,
     ethAddress: agentAddress,
-    encryptedPrivateKey: encryptPrivateKey(agentPrivateKey),
+    encryptedPrivateKey: "", // Not storing private key - uses env var
     status: "active",
     createdAt: new Date(),
     stats: {
@@ -66,7 +65,7 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
   };
 
   await agentsCollection.insertOne(agent);
-  console.log(`✅ Stored agent in database`);
+  console.log(`✅ Agent record created for trial ${trialId}`);
 
   // 4. Authorize agent for all patients
   const patientsAuthorized = await authorizeAgentForAllPatients(agentDid);
@@ -332,7 +331,11 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
 async function getAgentClient(encryptedPrivateKey: string, ethAddress: string): Promise<T3nClient> {
   setEnvironment("testnet");
 
-  const privateKey = decryptPrivateKey(encryptedPrivateKey);
+  // For MVP, all agents use T3N_API_KEY from environment
+  const privateKey = process.env.T3N_API_KEY!;
+  if (!privateKey) {
+    throw new Error("T3N_API_KEY not set in environment");
+  }
 
   const wasmComponent = await loadWasmComponent();
   const client = new T3nClient({
