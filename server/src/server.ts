@@ -1,3 +1,4 @@
+import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import env from "@fastify/env";
@@ -13,6 +14,14 @@ import { agentsRoutes } from "./routes/agents";
 import { pharmaRoutes } from "./routes/pharma";
 
 const isDev = process.env.NODE_ENV !== "production";
+
+// Log loaded environment variables for debugging
+console.log("🔍 Environment check:");
+console.log("  - WALLET_ENCRYPTION_KEY:", process.env.WALLET_ENCRYPTION_KEY ? "✅ Set" : "❌ Missing");
+console.log("  - MONGODB_URI:", process.env.MONGODB_URI ? "✅ Set" : "❌ Missing");
+console.log("  - T3N_API_KEY:", process.env.T3N_API_KEY ? "✅ Set" : "❌ Missing");
+console.log("  - LLM_PROVIDER:", process.env.LLM_PROVIDER || "gemini");
+console.log("");
 
 const fastify = Fastify({
   logger: isDev
