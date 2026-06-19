@@ -31,7 +31,7 @@
 						Enter Patient Portal
 						<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
 					</a>
-					<a href="/login" class="btn-ghost w-full sm:w-auto text-body-md py-3 px-8">
+					<a href="/pharma/onboarding" class="btn-ghost w-full sm:w-auto text-body-md py-3 px-8">
 						For Institutions
 					</a>
 				</div>
