@@ -652,6 +652,26 @@ Pharma Organizations (External Tenants):
 
 ---
 
+### **10. Stitch Screens Development Artifacts Excluded**
+
+**Decision:** Exclude `Frontend/src/lib/stitch-screens` folder from version control.
+
+**Rationale:**
+- **Development-only artifacts** - Contains HTML snapshots and screenshots used for UI prototyping
+- **Not production code** - These files are not imported or used by the application
+- **Large binary files** - Screenshots increase repository size unnecessarily
+- **No runtime dependency** - Removing them doesn't affect application functionality
+
+**Content:**
+- `html/` - Static HTML prototypes for rapid UI iteration
+- `screenshots/` - Screen captures for design reference and documentation
+
+**Files Changed:**
+- `Frontend/.gitignore` - Added `src/lib/stitch-screens/`
+- Repository history - Untracked existing files
+
+---
+
 ## 🔧 **Technical Implementation Details**
 
 ### **Environment Variables Added**

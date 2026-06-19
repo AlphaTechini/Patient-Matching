@@ -279,9 +279,9 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
         
         // Generate AI explanation if available
         let details: string | undefined;
-        if (llmService) {
+        if (llm) {
           try {
-            details = await llmService.generateExplanation(id, result) as string;
+            details = await llm.generateExplanation(id, result) as string;
           } catch (err) {
             fastify.log.warn({ err }, "Failed to generate AI explanation");
           }
