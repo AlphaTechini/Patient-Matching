@@ -209,6 +209,70 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
       return { success: true, message: `Trial ${id} deleted` };
     },
   );
+
+  // Check eligibility for a specific trial (patient-initiated)
+  fastify.post<{ 
+    Params: { id: string };
+    Body: { patientDid: string };
+  }>(
+    "/trials/:id/check-eligibility",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: {
+            id: { type: "string" },
+          },
+        },
+        body: {
+          type: "object",
+          required: ["patientDid"],
+          properties: {
+            patientDid: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const { patientDid } = request.body;
+
+      const trial = trialsStore.get(id);
+      if (!trial) {
+        return reply.status(404).send({ error: "Trial not found" });
+      }
+
+      if (!teeClient) {
+        return reply.status(503).send({ error: "TEE client not configured" });
+      }
+
+      fastify.log.info({ trialId: id, patientDid }, "Checking eligibility via TEE");
+
+      try {
+        const result = await teeClient.checkEligibility(id, patientDid);
+        
+        return {
+          success: true,
+          eligibility: result,
+          trial: {
+            id: trial.id,
+            name: trial.name,
+            phase: trial.phase,
+            indication: trial.indication,
+          },
+        };
+      } catch (error) {
+        fastify.log.error({ error, trialId: id, patientDid }, "Eligibility check failed");
+        
+        if (error instanceof Error) {
+          return reply.status(500).send({ error: error.message });
+        }
+        
+        return reply.status(500).send({ error: "Failed to check eligibility" });
+      }
+    },
+  );
 }
 
 // Export function to access the trials store
