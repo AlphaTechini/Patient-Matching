@@ -545,6 +545,64 @@ By leveraging Terminal 3 ADK's cryptographic agent identity, TEE-protected data 
 
 ---
 
+### **9. Platform Controls Hospital Infrastructure (No Hospital Onboarding)**
+
+**Decision:** Platform acts as the hospital tenant - no separate hospital onboarding UI needed.
+
+**Rationale:**
+- **Platform = Hospital Infrastructure Owner**
+  - The TrialMatch platform controls the EHR backend
+  - Platform runs the hospital TEE contract
+  - Platform manages patient data storage (MongoDB → T3N profiles)
+  - Hospital role is infrastructure, not end-user
+
+- **Pharma = External Users**
+  - Pharma companies are external organizations
+  - Each pharma brings their own T3N DID
+  - Pharma needs registration/login UI
+  - Multiple pharma organizations can use the platform
+
+- **Agent Deployment Model**
+  - Pharma creates trial → Platform deploys agent
+  - Agent uses platform's hospital contract
+  - Agent scans platform's patient database
+  - Results returned to pharma organization
+
+**Frontend Impact:**
+- ❌ No `/hospital` routes needed
+- ✅ `/pharma/onboarding` for pharma registration
+- ✅ `/pharma/trials` for pharma trial management
+- ✅ `/patient/*` routes for patients (end users)
+
+**Backend Architecture:**
+```
+Platform (Hospital Tenant):
+  - Controls hospital-screening contract
+  - Manages patient records
+  - Executes TEE eligibility checks
+  - Deploys agents on behalf of pharma
+
+Pharma Organizations (External Tenants):
+  - Register with their T3N DID
+  - Create trials via platform
+  - Deploy agents to scan patients
+  - Receive match results
+```
+
+**Why This Works:**
+- Clear separation: Platform infrastructure vs. Pharma users
+- Reduces complexity: No need for hospital user accounts
+- Real-world model: EHR platforms (Epic, Cerner) control infrastructure, pharma accesses via API
+- MVP-appropriate: Single hospital backend, multiple pharma organizations
+
+**Files Changed:**
+- `Frontend/src/routes/pharma/onboarding/+page.svelte` - Pharma registration/login
+- `Frontend/src/lib/stores/pharma.svelte.ts` - Pharma session management
+- `server/src/routes/pharma.ts` - Pharma organization endpoints
+- Removed: `Frontend/src/routes/hospital/` (not needed)
+
+---
+
 ## 🔧 **Technical Implementation Details**
 
 ### **Environment Variables Added**
