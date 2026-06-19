@@ -12,13 +12,29 @@ import { patientsRoutes } from "./routes/patients-new";
 import { agentsRoutes } from "./routes/agents";
 import { pharmaRoutes } from "./routes/pharma";
 
-const fastify = Fastify({ logger: true });
+const isDev = process.env.NODE_ENV !== "production";
+
+const fastify = Fastify({
+  logger: isDev
+    ? {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "HH:MM:ss",
+            ignore: "pid,hostname",
+            singleLine: false,
+          },
+        },
+      }
+    : true,
+});
 
 await fastify.register(env, {
   dotenv: true,
   schema: {
     type: "object",
-    required: ["EHR_API_KEY", "TRIALS_API_KEY"],
+    required: ["EHR_API_KEY", "TRIALS_API_KEY", "WALLET_ENCRYPTION_KEY"],
     properties: {
       T3N_API_KEY: { type: "string", default: "" },
       AGENT_KEY: { type: "string", default: "" },
@@ -30,7 +46,7 @@ await fastify.register(env, {
       GEMINI_API_KEY: { type: "string", default: "" },
       GROQ_API_KEY: { type: "string", default: "" },
       MONGODB_URI: { type: "string", default: "" },
-      WALLET_ENCRYPTION_KEY: { type: "string", default: "" },
+      WALLET_ENCRYPTION_KEY: { type: "string" },
       PORT: { type: "string", default: "3008" },
     },
   },
