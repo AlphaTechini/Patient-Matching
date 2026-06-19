@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import SideNav from '$lib/components/SideNav.svelte';
 	import { page } from '$app/stores';
+	import { identityStore } from '$lib/stores/identity.svelte';
 	
 	let { children } = $props();
 	
@@ -13,6 +16,16 @@
 		if (path.includes('/permissions')) return 'permissions';
 		if (path.includes('/audit')) return 'audit';
 		return 'dashboard';
+	});
+
+	onMount(() => {
+		// Restore identity from localStorage if available
+		identityStore.restore();
+
+		// Redirect to landing page if not authenticated
+		if (!identityStore.isAuthenticated) {
+			goto('/');
+		}
 	});
 </script>
 

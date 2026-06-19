@@ -1,10 +1,22 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { pharmaStore } from '$lib/stores/pharma.svelte';
+	import { identityStore } from '$lib/stores/identity.svelte';
 
 	let { role = 'patient', activeItem = 'dashboard' } = $props<{
 		role?: 'patient' | 'pharma' | 'hospital';
 		activeItem?: string;
 	}>();
+
+	function handleSignOut() {
+		if (role === 'pharma') {
+			pharmaStore.clearPharma();
+			goto('/pharma/onboarding');
+		} else if (role === 'patient') {
+			identityStore.clear();
+			goto('/');
+		}
+	}
 
 	// Define navigation items based on role
 	const navItems = {
@@ -113,10 +125,20 @@
 
 		{#if role === 'patient'}
 			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">My Identity</p>
-			<div class="flex items-center gap-2 cursor-pointer group" onclick={() => alert('DID Copied!')}>
+			<div class="flex items-center gap-2 cursor-pointer group mb-4" onclick={() => alert('DID Copied!')}>
 				<span class="text-mono-data text-outline group-hover:text-primary transition-colors">{currentBrand.did}</span>
 				<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">content_copy</span>
 			</div>
+		{/if}
+
+		{#if role === 'patient' || role === 'pharma'}
+			<button 
+				onclick={handleSignOut}
+				class="w-full bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] text-on-surface-variant hover:text-on-surface hover:border-red-500 hover:bg-red-500/10 transition-colors rounded-lg py-2 px-3 flex items-center justify-center gap-2 text-label-md"
+			>
+				<span class="material-symbols-outlined text-[18px]">logout</span>
+				Sign Out
+			</button>
 		{/if}
 	</div>
 </nav>
