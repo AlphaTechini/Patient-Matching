@@ -17,8 +17,9 @@
 		try {
 			const formData = new FormData();
 			formData.append('healthRecord', selectedFile);
+			formData.append('patientDid', identityStore.patientDid);
 			
-			const response = await fetch(`${API_BASE}/api/patients/${identityStore.patientDid}/upload`, {
+			const response = await fetch(`${API_BASE}/api/patients/upload-pdf`, {
 				method: 'POST',
 				body: formData,
 			});
