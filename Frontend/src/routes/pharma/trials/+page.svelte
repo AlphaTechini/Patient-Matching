@@ -105,8 +105,10 @@
 			if (!response.ok) return;
 
 			const data = await response.json();
-			agentsByTrial.set(trialId, data.agents || []);
-			agentsByTrial = agentsByTrial;
+			// Create a new Map instance to trigger Svelte 5 reactivity
+			const updatedMap = new Map(agentsByTrial);
+			updatedMap.set(trialId, data.agents || []);
+			agentsByTrial = updatedMap;
 		} catch (err) {
 			console.error(`Error fetching agents for trial ${trialId}:`, err);
 		}
@@ -134,6 +136,9 @@
 			const data = await response.json();
 			console.log('Agent deployed:', data);
 
+			// Refresh agents list BEFORE showing success modal
+			await fetchAgentsForTrial(trialId);
+
 			// Show success state
 			deploymentStatus = 'success';
 			deploymentMessage = 'Agent deployed successfully!';
@@ -143,8 +148,10 @@
 				patientsAuthorized: data.patientsAuthorized
 			};
 
-			// Refresh agents list
-			await fetchAgentsForTrial(trialId);
+			// Auto-close modal after 2 seconds to show the updated button state
+			setTimeout(() => {
+				closeDeploymentModal();
+			}, 2000);
 		} catch (err) {
 			deploymentStatus = 'error';
 			deploymentMessage = err instanceof Error ? err.message : 'Failed to deploy agent';
@@ -181,20 +188,26 @@
 			const data = await response.json();
 			console.log('Agent run complete:', data);
 
-			// Show success state
-			runStatus = 'success';
-			runMessage = 'Matching complete!';
-
 			// Store results
-			agentResults.set(trialId, {
+			const updatedResults = new Map(agentResults);
+			updatedResults.set(trialId, {
 				eligiblePatients: data.eligiblePatients,
 				summary: data.summary,
 				ranAt: data.ranAt
 			});
-			agentResults = agentResults;
+			agentResults = updatedResults;
 
-			// Refresh agents list to update stats
+			// Refresh agents list to update stats BEFORE showing success
 			await fetchAgentsForTrial(trialId);
+
+			// Show success state
+			runStatus = 'success';
+			runMessage = 'Matching complete!';
+
+			// Auto-close modal after 2 seconds to show results
+			setTimeout(() => {
+				closeRunModal();
+			}, 2000);
 		} catch (err) {
 			runStatus = 'error';
 			runMessage = err instanceof Error ? err.message : 'Failed to run agent';
