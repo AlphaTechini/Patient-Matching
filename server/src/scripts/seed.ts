@@ -525,11 +525,9 @@ export async function seedDatabase() {
 }
 
 // Run seeding if executed directly
-if (require.main === module) {
-  seedDatabase()
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error(err);
-      process.exit(1);
-    });
-}
+seedDatabase()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
