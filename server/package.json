@@ -9,6 +9,7 @@
     "setup": "tsx src/scripts/setup.ts",
     "authorize": "tsx src/scripts/authorize.ts",
     "invoke": "tsx src/scripts/invoke.ts",
+    "seed": "tsx src/scripts/seed.ts",
     "build:pharma": "cd ../contracts/pharma-trial && cargo build --target wasm32-wasip2 --release",
     "build:hospital": "cd ../contracts/hospital-screening && cargo build --target wasm32-wasip2 --release",
     "build:all": "pnpm build:pharma && pnpm build:hospital",
