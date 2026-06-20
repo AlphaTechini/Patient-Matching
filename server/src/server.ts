@@ -98,7 +98,7 @@ const llmService = new LLMService(config.LLM_PROVIDER ?? "gemini");
 const orchestrator = new Orchestrator(llmService, teeClient);
 
 await fastify.register(matchRoutes, { prefix: "/api", orchestrator });
-await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient });
+await fastify.register(trialsRoutes, { prefix: "/api", llm: llmService, teeClient, useDatabase });
 await fastify.register(patientsRoutes, { prefix: "/api", useDatabase });
 await fastify.register(agentsRoutes, { prefix: "/api", useDatabase });
 await fastify.register(pharmaRoutes, { prefix: "/api", useDatabase });

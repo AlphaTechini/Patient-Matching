@@ -483,19 +483,41 @@ export async function seedDatabase() {
     const trial4: ParsedTrial = { ...trial4Template, sponsor: pharmaName };
     const trial5: ParsedTrial = { ...trial5Template, sponsor: pharmaName };
 
-    // 3. Seed Trials
+    // 3. Seed Trials (both in-memory store AND MongoDB)
     console.log("📋 Seeding pharmaceutical trials...");
     
+    const trialsCollection = db.collection("trials");
+    
+    // Trial 3
     trialsStore.set(trial3.id, trial3);
+    await trialsCollection.updateOne(
+      { id: trial3.id },
+      { $set: trial3 },
+      { upsert: true }
+    );
     console.log(`   ✓ ${trial3.id}: ${trial3.name}`);
     
+    // Trial 4
     trialsStore.set(trial4.id, trial4);
+    await trialsCollection.updateOne(
+      { id: trial4.id },
+      { $set: trial4 },
+      { upsert: true }
+    );
     console.log(`   ✓ ${trial4.id}: ${trial4.name}`);
     
+    // Trial 5
     trialsStore.set(trial5.id, trial5);
+    await trialsCollection.updateOne(
+      { id: trial5.id },
+      { $set: trial5 },
+      { upsert: true }
+    );
     console.log(`   ✓ ${trial5.id}: ${trial5.name}`);
     
-    console.log(`   Total trials in store: ${trialsStore.size}\n`);
+    console.log(`   Trials in memory: ${trialsStore.size}`);
+    const dbTrialsCount = await trialsCollection.countDocuments({});
+    console.log(`   Trials in MongoDB: ${dbTrialsCount}\n`);
 
     // 4. Seed Patients
     console.log("👥 Seeding patient records...");

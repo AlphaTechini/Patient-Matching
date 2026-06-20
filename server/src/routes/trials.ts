@@ -6,6 +6,7 @@ import { getCachedMatchResult, cacheMatchResult, invalidateTrialMatches } from "
 interface TrialsRoutesOptions extends FastifyPluginOptions {
   llm: LLMService;
   teeClient?: ITeeClient;
+  useDatabase?: boolean;
 }
 
 export interface TrialCriteria {
@@ -32,7 +33,7 @@ export interface ParsedTrial {
 // In-memory storage for trials (for MVP demo purposes)
 const trialsStore: Map<string, ParsedTrial> = new Map();
 
-// Initialize with mock trial for testing
+// Initialize with mock trials for testing
 trialsStore.set("TRIAL-2026-001", {
   id: "TRIAL-2026-001",
   name: "Phase III NSCLC Immunotherapy Trial",
@@ -77,8 +78,38 @@ trialsStore.set("TRIAL-2026-002", {
   },
 });
 
+/**
+ * Load trials from MongoDB into the in-memory store on server startup
+ * This ensures seeded trials persist across server restarts
+ */
+async function loadTrialsFromDatabase(useDatabase: boolean) {
+  if (!useDatabase) {
+    return;
+  }
+
+  try {
+    const { getDatabase } = await import("../services/database");
+    const db = getDatabase();
+    const trialsCollection = db.collection<ParsedTrial>("trials");
+    
+    const trials = await trialsCollection.find({}).toArray();
+    
+    trials.forEach((trial) => {
+      trialsStore.set(trial.id, trial);
+    });
+    
+    console.log(`✅ Loaded ${trials.length} trials from MongoDB into memory`);
+  } catch (error) {
+    console.error("⚠️  Failed to load trials from MongoDB:", error);
+  }
+}
+
 export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesOptions) {
   const { llm, teeClient } = opts;
+  
+  // Load trials from MongoDB on startup (if database is available)
+  const useDatabase = !!opts.useDatabase;
+  await loadTrialsFromDatabase(useDatabase);
 
   // Create a new trial by parsing protocol text
   fastify.post<{ Body: { protocolText: string; trialName?: string; phase?: string; indication?: string } }>(
@@ -134,7 +165,24 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
       // Store the trial in backend
       trialsStore.set(trialId, newTrial);
 
-      fastify.log.info({ trialId, criteriaCount: newTrial.criteria.inclusion.length }, "Trial created in backend store");
+      // Also store in MongoDB if database is available
+      if (useDatabase) {
+        try {
+          const { getDatabase } = await import("../services/database");
+          const db = getDatabase();
+          const trialsCollection = db.collection("trials");
+          await trialsCollection.updateOne(
+            { id: trialId },
+            { $set: newTrial },
+            { upsert: true }
+          );
+          fastify.log.info({ trialId }, "Trial saved to MongoDB");
+        } catch (error) {
+          fastify.log.warn({ trialId, error }, "Failed to save trial to MongoDB, continuing with in-memory only");
+        }
+      }
+
+      fastify.log.info({ trialId, criteriaCount: newTrial.criteria.inclusion.length }, "Trial created");
 
       // Publish to TEE contract if using real TEE
       if (teeClient && typeof teeClient.publishTrial === 'function') {
