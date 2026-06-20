@@ -81,11 +81,12 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
 }
 
 async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
+  // Get patient credentials to authorize the agent
   const credentialsCollection = getPatientCredentialsCollection();
-  const allPatients = await credentialsCollection.find({}).toArray();
+  const allCredentials = await credentialsCollection.find({}).toArray();
 
-  if (allPatients.length === 0) {
-    console.log("⚠️  No patients to authorize yet");
+  if (allCredentials.length === 0) {
+    console.log("⚠️  No patient credentials found to authorize");
     return 0;
   }
 
@@ -99,12 +100,12 @@ async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
 
   let authorizedCount = 0;
 
-  for (const patient of allPatients) {
+  for (const credential of allCredentials) {
     try {
       // Create T3N client as the patient
       const patientClient = await getPatientClient(
-        patient.encryptedPrivateKey,
-        patient.ethAddress,
+        credential.encryptedPrivateKey,
+        credential.ethAddress,
       );
 
       // Get user contract version
@@ -136,7 +137,7 @@ async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
       });
 
       authorizedCount++;
-      console.log(`✅ Authorized agent for patient ${patient.patientDid} (${authorizedCount}/${allPatients.length})`);
+      console.log(`✅ Authorized agent for patient ${credential.patientDid} (${authorizedCount}/${allCredentials.length})`);
 
       // Log the authorization event
       try {
@@ -144,10 +145,10 @@ async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            patientDid: patient.patientDid,
+            patientDid: credential.patientDid,
             requester: agentDid,
-            requesterName: "Trial Agent", // Will be updated with actual name in deployAgent
-            trialId: "unknown", // Will be updated in deployAgent
+            requesterName: "Trial Agent",
+            trialId: "unknown",
             trialName: "Unknown Trial",
             action: "authorization",
             purpose: "Agent authorized to check trial eligibility",
@@ -155,18 +156,18 @@ async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
         });
 
         if (!response.ok) {
-          console.warn(`Failed to log authorization for ${patient.patientDid}`);
+          console.warn(`Failed to log authorization for ${credential.patientDid}`);
         }
       } catch (error) {
         console.warn(`Failed to log authorization event:`, error);
       }
     } catch (error) {
-      console.error(`❌ Failed to authorize agent for patient ${patient.patientDid}:`, error);
+      console.error(`❌ Failed to authorize agent for patient ${credential.patientDid}:`, error);
       // Continue with other patients
     }
   }
 
-  console.log(`🎉 Agent ${agentDid} authorized for ${authorizedCount}/${allPatients.length} patients`);
+  console.log(`🎉 Agent ${agentDid} authorized for ${authorizedCount}/${allCredentials.length} patients`);
   return authorizedCount;
 }
 
@@ -252,17 +253,47 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
 
   console.log(`🤖 Running agent ${agent.agentName} (${agentDid})`);
 
-  // 1. Get all patient DIDs
-  const credentialsCollection = getPatientCredentialsCollection();
-  const allPatients = await credentialsCollection.find({}).toArray();
-  const patientDids = allPatients.map((p) => p.patientDid);
+  // 1. Get all patients from `patients` collection (has healthRecord data)
+  const { getDatabase } = await import("./database");
+  const db = getDatabase();
+  const patientsCollection = db.collection("patients");
+  const allPatients = await patientsCollection.find({}).toArray();
+  
+  console.log(`📋 Found ${allPatients.length} patients to screen`);
 
-  console.log(`📋 Found ${patientDids.length} patients to screen`);
+  if (allPatients.length === 0) {
+    console.log("⚠️  No patients found to screen");
+    return {
+      agentDid,
+      trialId: agent.trialId,
+      eligiblePatients: [],
+      summary: {
+        screened: 0,
+        eligible: 0,
+        eligibilityRate: "0%",
+        averageConfidence: 0,
+      },
+      ranAt: new Date(),
+    };
+  }
 
-  // 2. Create agent T3N client
+  // 2. Get trial details from trials store
+  const { getTrialsStore } = await import("../routes/trials");
+  const trialsStore = getTrialsStore();
+  const trial = trialsStore.get(agent.trialId);
+
+  if (!trial) {
+    throw new Error(`Trial ${agent.trialId} not found`);
+  }
+
+  console.log(`📋 Trial: ${trial.name} (${trial.id})`);
+  console.log(`   Inclusion criteria: ${trial.criteria.inclusion.length}`);
+  console.log(`   Exclusion criteria: ${trial.criteria.exclusion.length}`);
+
+  // 3. Create agent T3N client
   const agentClient = await getAgentClient(agent.encryptedPrivateKey, agent.ethAddress);
 
-  // 3. Check eligibility for each patient
+  // 4. Check eligibility for each patient
   const results: Array<{
     patientDid: string;
     eligible: boolean;
@@ -276,7 +307,9 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
   const hospitalScriptName = `z:${hospitalTenantId}:patient-screening`;
   const scriptVersion = await getScriptVersion(getNodeUrl(), hospitalScriptName);
 
-  for (const patientDid of patientDids) {
+  for (const patient of allPatients) {
+    const patientDid = patient.patientDid;
+    
     try {
       const eligibility = await agentClient.executeAndDecode({
         script_name: hospitalScriptName,
@@ -297,7 +330,7 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
         totalCriteria: eligibility.total_criteria,
       });
 
-      // Cache result for future lookups
+      // Cache ALL results (eligible AND non-eligible) per architecture
       await cacheMatchResult({
         trialId: agent.trialId,
         patientDid,
@@ -308,14 +341,24 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
       });
 
       console.log(
-        `${eligibility.eligible ? "✅" : "❌"} Patient ${patientDid}: ${eligibility.matched_criteria}/${eligibility.total_criteria} (confidence: ${eligibility.confidence}) - cached`,
+        `${eligibility.eligible ? "✅" : "❌"} Patient ${patientDid.substring(0, 20)}...: ${eligibility.matched_criteria}/${eligibility.total_criteria} (confidence: ${eligibility.confidence.toFixed(2)}) - cached`,
       );
     } catch (error) {
       console.error(`❌ Failed to check eligibility for ${patientDid}:`, error);
+      
+      // Cache failure as non-eligible to avoid repeated failures
+      await cacheMatchResult({
+        trialId: agent.trialId,
+        patientDid,
+        eligible: false,
+        confidence: 0,
+        matchedCriteria: 0,
+        totalCriteria: trial.criteria.inclusion.length + trial.criteria.exclusion.length,
+      });
     }
   }
 
-  // 4. Filter eligible patients only (100% match)
+  // 5. Filter eligible patients only (100% match)
   const eligiblePatients = results
     .filter((r) => r.eligible && r.matchedCriteria === r.totalCriteria)
     .map((r) => ({
@@ -325,18 +368,18 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
       totalCriteria: r.totalCriteria,
     }));
 
-  // 5. Calculate summary
+  // 6. Calculate summary
   const summary = {
     screened: results.length,
     eligible: eligiblePatients.length,
-    eligibilityRate: `${((eligiblePatients.length / results.length) * 100).toFixed(1)}%`,
+    eligibilityRate: `${results.length > 0 ? ((eligiblePatients.length / results.length) * 100).toFixed(1) : "0"}%`,
     averageConfidence:
       eligiblePatients.length > 0
         ? eligiblePatients.reduce((sum, p) => sum + p.confidence, 0) / eligiblePatients.length
         : 0,
   };
 
-  // 6. Update agent stats
+  // 7. Update agent stats
   await agentsCollection.updateOne(
     { agentDid },
     {
@@ -352,6 +395,8 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
   );
 
   console.log(`🎉 Agent run complete: ${eligiblePatients.length}/${results.length} eligible`);
+  console.log(`   Eligibility rate: ${summary.eligibilityRate}`);
+  console.log(`   Average confidence: ${summary.averageConfidence.toFixed(2)}`);
 
   return {
     agentDid,

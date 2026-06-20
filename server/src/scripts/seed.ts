@@ -10,18 +10,8 @@
 import "dotenv/config";
 import { connectDatabase, getDatabase } from "../services/database";
 import { getTrialsStore, type ParsedTrial, type TrialCriteria } from "../routes/trials";
-import crypto from "crypto";
-
-// Utility to generate a DID
-function generateDID(prefix: string): string {
-  const randomHex = crypto.randomBytes(20).toString("hex");
-  return `did:t3n:${prefix}:0x${randomHex}`;
-}
-
-// Utility to encrypt a mock private key
-function generateEncryptedKey(): string {
-  return crypto.randomBytes(32).toString("hex");
-}
+import { createPatientAccount } from "../services/patient-onboarding";
+import type { PatientAccount } from "../services/patient-onboarding";
 
 /**
  * TRIAL 3: Type 2 Diabetes with Cardiovascular Risk Reduction Study
@@ -133,8 +123,6 @@ const trial5Template: Omit<ParsedTrial, "sponsor"> = {
 
 interface PatientRecord {
   email: string;
-  patientDid: string;
-  encryptedPrivateKey: string;
   healthRecord: {
     demographics: {
       age: number;
@@ -163,8 +151,6 @@ const patients: PatientRecord[] = [
   // PATIENT 1 - Matches Trial 3 (Diabetes)
   {
     email: "patient001@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 58, gender: "male", ethnicity: "Caucasian" },
       vitals: { height_cm: 175, weight_kg: 92, bmi: 30.0, blood_pressure: "142/88", heart_rate: 78 },
@@ -191,8 +177,6 @@ const patients: PatientRecord[] = [
   // PATIENT 2 - Matches Trial 3 (Diabetes)
   {
     email: "patient002@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 62, gender: "female", ethnicity: "African American" },
       vitals: { height_cm: 162, weight_kg: 88, bmi: 33.5, blood_pressure: "138/84", heart_rate: 72 },
@@ -219,8 +203,6 @@ const patients: PatientRecord[] = [
   // PATIENT 3 - Matches Trial 3 (Diabetes)
   {
     email: "patient003@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 54, gender: "male", ethnicity: "Hispanic" },
       vitals: { height_cm: 168, weight_kg: 95, bmi: 33.7, blood_pressure: "145/92", heart_rate: 80 },
@@ -247,8 +229,6 @@ const patients: PatientRecord[] = [
   // PATIENT 4 - Matches Trial 3 (Diabetes)
   {
     email: "patient004@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 67, gender: "female", ethnicity: "Asian" },
       vitals: { height_cm: 158, weight_kg: 72, bmi: 28.8, blood_pressure: "152/90", heart_rate: 76 },
@@ -275,8 +255,6 @@ const patients: PatientRecord[] = [
   // PATIENT 5 - Matches Trial 4 (Heart Failure)
   {
     email: "patient005@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 71, gender: "male", ethnicity: "Caucasian" },
       vitals: { height_cm: 180, weight_kg: 88, bmi: 27.2, blood_pressure: "118/72", heart_rate: 68 },
@@ -303,8 +281,6 @@ const patients: PatientRecord[] = [
   // PATIENT 6 - Matches Trial 4 (Heart Failure)
   {
     email: "patient006@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 65, gender: "female", ethnicity: "African American" },
       vitals: { height_cm: 165, weight_kg: 78, bmi: 28.7, blood_pressure: "110/68", heart_rate: 72 },
@@ -330,8 +306,6 @@ const patients: PatientRecord[] = [
   // PATIENT 7 - Matches Trial 4 (Heart Failure)
   {
     email: "patient007@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 58, gender: "male", ethnicity: "Hispanic" },
       vitals: { height_cm: 172, weight_kg: 92, bmi: 31.1, blood_pressure: "124/78", heart_rate: 64 },
@@ -357,8 +331,6 @@ const patients: PatientRecord[] = [
   // PATIENT 8 - Matches Trial 5 (Colorectal Cancer)
   {
     email: "patient008@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 56, gender: "female", ethnicity: "Caucasian" },
       vitals: { height_cm: 168, weight_kg: 65, bmi: 23.0, blood_pressure: "128/82", heart_rate: 74 },
@@ -387,8 +359,6 @@ const patients: PatientRecord[] = [
   // PATIENT 9 - Matches Trial 5 (Colorectal Cancer)
   {
     email: "patient009@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 62, gender: "male", ethnicity: "Asian" },
       vitals: { height_cm: 174, weight_kg: 72, bmi: 23.8, blood_pressure: "132/78", heart_rate: 70 },
@@ -417,8 +387,6 @@ const patients: PatientRecord[] = [
   // PATIENT 10 - Matches Trial 5 (Colorectal Cancer)
   {
     email: "patient010@test.com",
-    patientDid: generateDID("p"),
-    encryptedPrivateKey: generateEncryptedKey(),
     healthRecord: {
       demographics: { age: 48, gender: "female", ethnicity: "African American" },
       vitals: { height_cm: 162, weight_kg: 58, bmi: 22.1, blood_pressure: "118/76", heart_rate: 68 },
@@ -519,17 +487,78 @@ export async function seedDatabase() {
     const dbTrialsCount = await trialsCollection.countDocuments({});
     console.log(`   Trials in MongoDB: ${dbTrialsCount}\n`);
 
-    // 4. Seed Patients
+    // 4. Seed Patients (both patients collection AND patient_credentials)
     console.log("👥 Seeding patient records...");
+    console.log("   Creating patient accounts with T3N SDK (this may take a moment)...\n");
     
     const patientsCollection = db.collection("patients");
+    const credentialsCollection = db.collection("patient_credentials");
     
-    for (const patient of patients) {
-      await patientsCollection.insertOne(patient);
-      console.log(`   ✓ ${patient.email} (${patient.patientDid.slice(0, 20)}...)`);
+    for (const patientTemplate of patients) {
+      // Check if patient already exists by email
+      const existing = await patientsCollection.findOne({ email: patientTemplate.email });
+      
+      let patientAccount: PatientAccount;
+      
+      if (existing) {
+        // Use existing patient's account
+        patientAccount = {
+          patientDid: existing.patientDid,
+          ethAddress: existing.ethAddress,
+          encryptedPrivateKey: existing.encryptedPrivateKey,
+          createdAt: existing.createdAt,
+        };
+        console.log(`   ↻ ${patientTemplate.email} (already exists, keeping DID: ${patientAccount.patientDid.substring(0, 30)}...)`);
+        
+        // Update health record but keep account info
+        await patientsCollection.updateOne(
+          { email: patientTemplate.email },
+          { 
+            $set: { 
+              healthRecord: patientTemplate.healthRecord,
+              createdAt: patientTemplate.createdAt 
+            } 
+          }
+        );
+      } else {
+        // Create new patient account using T3N SDK (proper way!)
+        console.log(`   🔑 Creating wallet and DID for ${patientTemplate.email}...`);
+        patientAccount = await createPatientAccount();
+        console.log(`   ✅ ${patientTemplate.email}`);
+        console.log(`      DID: ${patientAccount.patientDid}`);
+        console.log(`      Eth Address: ${patientAccount.ethAddress}`);
+        
+        // Insert new patient with proper DID
+        await patientsCollection.insertOne({
+          email: patientTemplate.email,
+          patientDid: patientAccount.patientDid,
+          ethAddress: patientAccount.ethAddress,
+          encryptedPrivateKey: patientAccount.encryptedPrivateKey,
+          healthRecord: patientTemplate.healthRecord,
+          createdAt: patientTemplate.createdAt,
+        });
+      }
+      
+      // Always ensure credentials exist with matching DID
+      await credentialsCollection.updateOne(
+        { patientDid: patientAccount.patientDid },
+        { 
+          $set: {
+            patientDid: patientAccount.patientDid,
+            email: patientTemplate.email,
+            encryptedPrivateKey: patientAccount.encryptedPrivateKey,
+            ethAddress: patientAccount.ethAddress,
+            createdAt: patientTemplate.createdAt,
+          }
+        },
+        { upsert: true }
+      );
     }
     
-    console.log(`   Total patients seeded: ${patients.length}\n`);
+    const totalPatients = await patientsCollection.countDocuments({});
+    const totalCredentials = await credentialsCollection.countDocuments({});
+    console.log(`\n   Total patients in DB: ${totalPatients}`);
+    console.log(`   Total credentials in DB: ${totalCredentials}\n`);
 
     // 5. Summary
     console.log("📊 Seeding Summary:");
