@@ -7,7 +7,8 @@
  * - Strategically distributed to match trial criteria
  */
 
-import { getDatabase } from "../services/database";
+import "dotenv/config";
+import { connectDatabase, getDatabase } from "../services/database";
 import { getTrialsStore, type ParsedTrial, type TrialCriteria } from "../routes/trials";
 import crypto from "crypto";
 
@@ -24,13 +25,14 @@ function generateEncryptedKey(): string {
 
 /**
  * TRIAL 3: Type 2 Diabetes with Cardiovascular Risk Reduction Study
+ * 
+ * NOTE: sponsor will be set to Ray Pharma's name from database
  */
-const trial3: ParsedTrial = {
+const trial3Template: Omit<ParsedTrial, "sponsor"> = {
   id: "TRIAL-2026-003",
   name: "SGLT2 Inhibitor for Diabetic Nephropathy Prevention",
   phase: "III",
   indication: "Type 2 Diabetes with High Cardiovascular Risk",
-  sponsor: "CardioMetab Research Institute",
   description: "A multicenter, randomized, double-blind, placebo-controlled trial evaluating the efficacy of a novel SGLT2 inhibitor in reducing progression of diabetic kidney disease and cardiovascular events in patients with type 2 diabetes mellitus.",
   startDate: "2026-09-01",
   enrollmentCount: 450,
@@ -58,12 +60,11 @@ const trial3: ParsedTrial = {
 /**
  * TRIAL 4: Heart Failure with Reduced Ejection Fraction (HFrEF)
  */
-const trial4: ParsedTrial = {
+const trial4Template: Omit<ParsedTrial, "sponsor"> = {
   id: "TRIAL-2026-004",
   name: "Novel Angiotensin Receptor-Neprilysin Inhibitor for HFrEF",
   phase: "III",
   indication: "Heart Failure with Reduced Ejection Fraction",
-  sponsor: "CardioTherapeutics Inc.",
   description: "A phase III, randomized, double-blind study evaluating the safety and efficacy of a next-generation ARNI in reducing cardiovascular death and heart failure hospitalization in patients with chronic heart failure and reduced ejection fraction.",
   startDate: "2026-10-15",
   enrollmentCount: 380,
@@ -91,12 +92,11 @@ const trial4: ParsedTrial = {
 /**
  * TRIAL 5: Advanced Colorectal Cancer Immunotherapy
  */
-const trial5: ParsedTrial = {
+const trial5Template: Omit<ParsedTrial, "sponsor"> = {
   id: "TRIAL-2026-005",
   name: "PD-1/CTLA-4 Dual Checkpoint Inhibitor for MSI-H CRC",
   phase: "II",
   indication: "Microsatellite Instability-High Colorectal Cancer",
-  sponsor: "OncoPrecision Therapeutics",
   description: "A phase II, open-label, single-arm study evaluating the efficacy and safety of combination PD-1 and CTLA-4 checkpoint inhibition in patients with advanced microsatellite instability-high or mismatch repair-deficient colorectal cancer who have progressed on prior therapy.",
   startDate: "2026-11-01",
   enrollmentCount: 120,
@@ -452,10 +452,38 @@ export async function seedDatabase() {
   console.log("🌱 Starting database seeding...\n");
 
   try {
+    // Connect to database
+    const mongoUri = process.env.MONGODB_URI;
+    if (!mongoUri) {
+      throw new Error("MONGODB_URI environment variable not set");
+    }
+    
+    await connectDatabase(mongoUri, "trialmatch");
     const db = getDatabase();
     const trialsStore = getTrialsStore();
 
-    // 1. Seed Trials
+    // 1. Fetch RayPharma from database
+    console.log("🔍 Fetching pharma organization...");
+    
+    const pharmaCollection = db.collection("pharma_organizations");
+    let rayPharma = await pharmaCollection.findOne({ name: "RayPharma" });
+    
+    let pharmaName = "RayPharma";
+    
+    if (rayPharma) {
+      pharmaName = rayPharma.name;
+      console.log(`   ✓ Found: ${pharmaName}`);
+    } else {
+      console.log(`   ⚠ Pharma organization not found, using default: ${pharmaName}`);
+    }
+    console.log("");
+
+    // 2. Create trials with Ray Pharma as sponsor
+    const trial3: ParsedTrial = { ...trial3Template, sponsor: pharmaName };
+    const trial4: ParsedTrial = { ...trial4Template, sponsor: pharmaName };
+    const trial5: ParsedTrial = { ...trial5Template, sponsor: pharmaName };
+
+    // 3. Seed Trials
     console.log("📋 Seeding pharmaceutical trials...");
     
     trialsStore.set(trial3.id, trial3);
@@ -469,7 +497,7 @@ export async function seedDatabase() {
     
     console.log(`   Total trials in store: ${trialsStore.size}\n`);
 
-    // 2. Seed Patients
+    // 4. Seed Patients
     console.log("👥 Seeding patient records...");
     
     const patientsCollection = db.collection("patients");
@@ -481,8 +509,9 @@ export async function seedDatabase() {
     
     console.log(`   Total patients seeded: ${patients.length}\n`);
 
-    // 3. Summary
+    // 5. Summary
     console.log("📊 Seeding Summary:");
+    console.log(`   Sponsor: ${pharmaName}`);
     console.log("   Trials:");
     console.log(`     - Trial 3 (Diabetes): 4 matching patients (001-004)`);
     console.log(`     - Trial 4 (Heart Failure): 3 matching patients (005-007)`);
