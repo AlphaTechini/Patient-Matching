@@ -83,48 +83,61 @@ Full solution architecture: [Solution.md](Solution.md)
 
 ---
 
-## Roadmap
+## Current Implementation Status
 
-### **MVP (Current Sprint)**
-✅ **Autonomous Agent-Driven Matching**
-- Hospital clicks "Deploy Agent" → agent scans all patients
-- One agent per trial (named after trial for easy debugging)
-- Automatic patient authorization (no manual steps)
-- Returns eligible patient DIDs + aggregated statistics
-- Privacy preserved: agent sees eligibility only, not PHI
+### **✅ Completed Features**
 
-### **Phase 2 (Post-MVP)**
-⏱️ **Scheduled Agent Runs**
-- Cron job every 2 days to check for new patients
-- Efficient batching (e.g., 4 patients every 2 days vs 2 daily)
-- Avoids useless LLM calls while maintaining freshness
+**Backend Infrastructure:**
+- Fastify REST API with MongoDB integration
+- Agent-driven batch matching architecture
+- Match result caching system (7-day expiry)
+- Access logs tracking for patient data usage
+- Pharma organization registration and management
+- Patient custodial wallet system with AES-256-GCM encryption
+- Seed script for populating test data (5 trials, 10 patients)
 
-⏱️ **Email-Based Patient Contact**
-- Hospital can request contact with eligible patients
-- Platform sends notification email to patient
-- Patient explicitly consents to share data
-- Email addresses exposed only with patient permission
+**Frontend (Patient Portal):**
+- Patient registration and authentication
+- Health data upload interface
+- Trial matches dashboard (fetches from backend cache)
+- Secure wallet view with real patient DID display
+- Access logs display (shows agent authorization events)
+- Sign-out functionality for testing multiple accounts
 
-⏱️ **Consent Management Dashboard**
-- Patient UI showing which hospitals requested contact
-- Granular consent options (share diagnosis only, share all, etc.)
-- Time-limited data sharing
-- Revocable permissions at any time
+**Frontend (Pharma Portal):**
+- Pharma organization onboarding flow
+- Trial creation with LLM-based protocol parsing
+- Trial management and listing
+- Trial details modal with full criteria display
+- Match results aggregation page (eligible patients by trial)
+- Reactive organization name in sidebar navigation
 
-### **Phase 3 (Future)**
-📅 **In-Platform Messaging**
-- Real-time chat between hospital and patient (WebSockets)
-- Patient controls conversation initiation
-- End-to-end encrypted messages
+**TEE Integration:**
+- Hospital screening contract (eligibility checking)
+- Pharma trial contract (criteria management)
+- MockTEEClient for local development
+- Agent authorization workflow
+- Cross-tenant ACL configuration
 
-📅 **Partial Match Recommendations**
-- Show patients who failed 1-2 criteria (might still qualify)
-- AI-powered alternative trial suggestions
+**Data Management:**
+- 5 seeded trials under RayPharma organization
+- 10 comprehensive patient records with realistic medical data
+- MongoDB collections: patients, trials, agents, match_results, access_logs, pharma_organizations
+- Strategic patient-trial matching for demo purposes
 
-📅 **Advanced Analytics**
-- Eligibility funnel visualization
-- Criteria impact analysis (which criteria exclude most patients)
-- Federated learning on aggregated (non-PHI) data
+### **⏱️ Roadmap (Future Phases)**
+
+**Phase 2:**
+- Scheduled agent runs (cron-based batch matching every 2 days)
+- Email-based patient contact system
+- Consent management dashboard
+- Real-time agent execution progress tracking
+
+**Phase 3:**
+- In-platform messaging (WebSockets for hospital-patient communication)
+- Partial match recommendations (near-eligible patients)
+- Advanced analytics (eligibility funnel, criteria impact analysis)
+- Multi-hospital support with separate EHR backends
 
 ---
 
@@ -149,83 +162,124 @@ pnpm install
 
 ---
 
-## Configuration
+## Quick Start
 
-Copy `server/.env.example` to `server/.env` and fill in your values:
+### 1. Install Dependencies
+
+```bash
+# Backend
+cd server
+pnpm install
+
+# Frontend
+cd ../Frontend
+pnpm install
+```
+
+### 2. Configure Environment
+
+Copy `server/.env.example` to `server/.env` and add:
 
 ```env
-# Terminal 3 API Key (from https://www.terminal3.io/claim-page)
+# MongoDB Connection (required)
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/trialmatch?retryWrites=true&w=majority
+
+# Terminal 3 API Key (optional - uses MockTEEClient if omitted)
 T3N_API_KEY=
 
-# Agent Key (Ethereum private key for the matching agent - generate your own)
-# You can generate one at https://vanity-eth.tk/ or use: openssl rand -hex 32
-AGENT_KEY=
-
-# EHR System API Key (mock or test key for hospital EHR integration)
-EHR_API_KEY=
-
-# Clinical Trials System API Key (mock or test key for trials API)
-TRIALS_API_KEY=
-
-# EHR Base URL (your backend API URL)
-EHR_BASE_URL=http://localhost:3008
-
-# LLM Configuration (Qwen 3.6 27B via Groq)
+# LLM Configuration (required for trial parsing)
 LLM_PROVIDER=groq
-GROQ_API_KEY=
+GROQ_API_KEY=your_groq_key_here
 
-# ─── Populated after running setup.ts ─────────────────────────────────────────
-# Paste the DID values output by setup.ts here
-PHARMA_TENANT_DID=
-HOSPITAL_TENANT_DID=
+# Auto-configured keys (already set in .env)
+WALLET_ENCRYPTION_KEY=<generated>
+AGENT_KEY=<generated>
+EHR_API_KEY=mock-ehr-key
+TRIALS_API_KEY=mock-trials-key
+EHR_BASE_URL=http://localhost:3008
 ```
 
-> **Note:** 
-> - `T3N_API_KEY` comes from the [Terminal 3 claim page](https://www.terminal3.io/claim-page) - save it immediately as it only appears once
-> - `AGENT_KEY` is an Ethereum private key for your matching agent - generate a new one (never use a wallet key!)
-> - `GROQ_API_KEY` get your free key from [console.groq.com](https://console.groq.com/) for LLM capabilities
-> - `EHR_API_KEY` and `TRIALS_API_KEY` can be mock values (they get sealed inside the TEE)
+**MongoDB Setup:**
+1. Sign up for free MongoDB Atlas account
+2. Create M0 cluster (512MB free tier)
+3. Whitelist your IP (or 0.0.0.0/0 for development)
+4. Get connection string and add to `.env`
+
+### 3. Seed Database
+
+```bash
+cd server
+pnpm run seed
+```
+
+This populates MongoDB with:
+- 5 clinical trials (SGLT2 inhibitor, ARNI therapy, PD-1/CTLA-4 combo)
+- 10 patients with comprehensive medical records
+- Strategic matching (4 patients for trial 3, 3 each for trials 4-5)
+
+### 4. Run Application
+
+```bash
+# Terminal 1: Backend
+cd server
+pnpm dev   # http://localhost:3008
+
+# Terminal 2: Frontend
+cd Frontend
+pnpm dev   # http://localhost:5173
+```
+
+### 5. Test Workflow
+
+1. **Patient Flow:**
+   - Go to http://localhost:5173
+   - Click "Enter Patient Portal" → Register with email
+   - Upload health data (or use seeded patient accounts)
+   - View trial matches on dashboard
+
+2. **Pharma Flow:**
+   - Click "For Institutions" → Register organization
+   - Create new trial (paste protocol text)
+   - View match results aggregated by trial
+
+> **Note:** Without `T3N_API_KEY`, the system uses `MockTEEClient` for local development. All features work normally with mock data.
 
 ---
 
-## Build Contracts
+## Backend API Endpoints
 
-```bash
-cd server
-pnpm run build:all
-```
-
-Or individually:
-```bash
-cd server
-pnpm run build:pharma
-pnpm run build:hospital
-```
-
-Output WASM files:
-- `contracts/pharma-trial/target/wasm32-wasip2/release/z_tenant_trial_matching.wasm`
-- `contracts/hospital-screening/target/wasm32-wasip2/release/z_tenant_patient_screening.wasm`
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/trials/create` | POST | Create trial from protocol text (LLM parsing) |
+| `/api/trials/all` | GET | List all trials |
+| `/api/trials/:id` | GET | Get trial details |
+| `/api/trials/:id/check-eligibility` | POST | Check patient eligibility (with caching) |
+| `/api/patients/:patientDid/matches` | GET | Get patient's eligible trials |
+| `/api/pharma/matches` | GET | Get all matches across trials |
+| `/api/access-logs` | GET/POST | Track agent authorization events |
+| `/api/pharma/register` | POST | Register pharma organization |
+| `/api/pharma/login` | POST | Login pharma organization |
+| `/api/patients/register` | POST | Create patient with custodial wallet |
+| `/api/patients/login` | POST | Patient login |
 
 ---
 
-## Run
-
-Execute from the `server/` directory:
+## Development Scripts
 
 ```bash
-cd server
+# Database seeding
+pnpm run seed           # Populate 5 trials + 10 patients
 
-# 1. Register contracts, create KV maps, seed secrets
-pnpm run setup
+# TEE contract deployment (requires T3N_API_KEY)
+pnpm run setup          # Register contracts, create KV maps
+pnpm run authorize      # Grant agent permissions
+pnpm run invoke         # Test agent execution flow
 
-# 2. Patient grants the matching agent access
-pnpm run authorize
-
-# 3. Agent executes the matching flow
-pnpm run invoke
+# Contract building
+pnpm run build:pharma   # Build pharma-trial contract
+pnpm run build:hospital # Build hospital-screening contract
+pnpm run build:all      # Build both contracts
 ```
-
-After `setup` completes, copy the output `PHARMA_TENANT_DID` and `HOSPITAL_TENANT_DID` values into `.env` before running `authorize` and `invoke`.
 
 ---
 
@@ -233,39 +287,14 @@ After `setup` completes, copy the output `PHARMA_TENANT_DID` and `HOSPITAL_TENAN
 
 | ADK Feature | Usage in TrialMatch |
 |---|---|
-| **TEE Contracts (WASM)** | Matching logic runs inside Intel TDX |
-| **Agent Auth (DID)** | Cryptographic identity for all parties |
-| **KV Maps + ACLs** | Trial criteria shared between pharma and hospital |
-| **Secrets Vault** | EHR API keys sealed via `map-entry-set` |
-| **HTTP with Placeholders** | Patient PII resolved host-side — never enters WASM |
-| **Outbound HTTP (user-granted)** | Agent can only call authorized EHR endpoints |
-| **Cross-tenant calls** | Hospital records match in pharma's contract |
-| **Capabilities from WIT** | Contract imports only what it needs |
-
----
-
-## Run Locally
-
-The server automatically falls back to a `MockTEEClient` when T3N credentials are missing, so you can develop and demo without testnet keys.
-
-### Backend
-
-```bash
-cd server
-pnpm install
-pnpm dev           # http://localhost:3008
-pnpm test          # vitest with mocks
-```
-
-### Frontend
-
-```bash
-cd Frontend
-pnpm install
-pnpm dev           # http://localhost:5173
-```
-
-In a separate terminal, start the backend first so the frontend can call `http://localhost:3000/api/*`.
+| **TEE Contracts (WASM)** | Eligibility matching inside Intel TDX enclave |
+| **Agent DIDs** | Cryptographic identity for autonomous agents |
+| **Custodial Wallets** | Platform-managed patient wallets (AES-256-GCM encrypted) |
+| **KV Maps + ACLs** | Cross-tenant trial criteria sharing |
+| **Secrets Vault** | EHR URLs and API keys sealed in TEE |
+| **HTTP with Placeholders** | Patient data resolved host-side, never enters WASM |
+| **Agent Authorization** | Patients grant agents access to screening contracts |
+| **Match Caching** | 7-day cache in MongoDB to avoid redundant TEE calls |
 
 ---
 
