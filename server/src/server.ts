@@ -57,18 +57,23 @@ await fastify.register(env, {
       MONGODB_URI: { type: "string", default: "" },
       WALLET_ENCRYPTION_KEY: { type: "string", default: "" },
       PORT: { type: "string", default: "3008" },
+      CORS_ORIGINS: { type: "string", default: "http://localhost:5173" },
     },
   },
 });
 
-await fastify.register(cors, { origin: true });
+const config = (fastify as unknown as { config: Record<string, string> }).config;
+
+const corsOrigins = config.CORS_ORIGINS
+  ? config.CORS_ORIGINS.split(",").map((s) => s.trim())
+  : true;
+
+await fastify.register(cors, { origin: corsOrigins });
 await fastify.register(multipart, {
   limits: {
     fileSize: 20 * 1024 * 1024, // 20MB max
   },
 });
-
-const config = (fastify as unknown as { config: Record<string, string> }).config;
 
 // Connect to MongoDB if URI is provided
 let useDatabase = false;
