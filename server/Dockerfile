@@ -4,8 +4,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@11 --activate
 
-# Server is a standalone package (no workspace deps needed)
-COPY pnpm-lock.yaml package.json ./
+COPY package.json ./
 
 RUN pnpm install --prod --config.node-linker=hoisted
 
