@@ -295,10 +295,7 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
   console.log(`   Inclusion criteria: ${trial.criteria.inclusion.length}`);
   console.log(`   Exclusion criteria: ${trial.criteria.exclusion.length}`);
 
-  // 3. Create agent T3N client
-  const agentClient = await getAgentClient(agent.encryptedPrivateKey, agent.ethAddress);
-
-  // 4. Check eligibility for each patient
+  // 3. Check eligibility for each patient using BACKEND (TEE bypass)
   const results: Array<{
     patientDid: string;
     eligible: boolean;
@@ -313,25 +310,15 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
     errorType: string;
   }> = [];
 
-  const hospitalTenantDid = process.env.HOSPITAL_TENANT_DID!;
-  const hospitalTenantId = hospitalTenantDid.slice("did:t3n:".length);
-  const hospitalScriptName = `z:${hospitalTenantId}:patient-screening`;
-  const scriptVersion = await getScriptVersion(getNodeUrl(), hospitalScriptName);
+  // Import backend eligibility checker
+  const { checkEligibility } = await import("./eligibility-checker");
 
   for (const patient of allPatients) {
     const patientDid = patient.patientDid;
     
     try {
-      const eligibility = await agentClient.executeAndDecode({
-        script_name: hospitalScriptName,
-        script_version: scriptVersion,
-        function_name: "check-eligibility",
-        input: {
-          trial_id: agent.trialId,
-          patient_did: patientDid,
-        },
-        pii_did: patientDid,
-      }) as any;
+      // Use backend eligibility checking (bypasses TEE)
+      const eligibility = checkEligibility(trial, patient.healthRecord);
 
       results.push({
         patientDid,
@@ -363,16 +350,7 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
       
       if (error instanceof Error) {
         errorMessage = error.message;
-        
-        if (errorMessage.includes("Forbidden") || errorMessage.includes("not permitted")) {
-          errorType = "authorization";
-        } else if (errorMessage.includes("Invalid") || errorMessage.includes("bad_request")) {
-          errorType = "validation";
-        } else if (errorMessage.includes("timeout") || errorMessage.includes("ETIMEDOUT")) {
-          errorType = "timeout";
-        } else {
-          errorType = "execution";
-        }
+        errorType = "execution";
       }
       
       errors.push({

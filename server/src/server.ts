@@ -5,7 +5,7 @@ import env from "@fastify/env";
 import multipart from "@fastify/multipart";
 import { Orchestrator } from "./orchestrator";
 import { LLMService } from "./llm";
-import { TEEClient, MockTEEClient } from "./tee-client";
+import { TEEClient } from "./tee-client";
 import { connectDatabase, closeDatabase } from "./services/database";
 import { matchRoutes } from "./routes/match";
 import { trialsRoutes } from "./routes/trials";
@@ -86,13 +86,9 @@ if (config.MONGODB_URI) {
   fastify.log.warn("MONGODB_URI not configured — patient onboarding will not work without database");
 }
 
-// Use real TEE client when T3N keys are configured; otherwise fall back to mock
-// so the server and integration tests work without testnet credentials.
-const hasTeeConfig = config.T3N_API_KEY && config.AGENT_KEY && config.PHARMA_TENANT_DID && config.HOSPITAL_TENANT_DID;
-const teeClient = hasTeeConfig ? new TEEClient() : new MockTEEClient();
-if (!hasTeeConfig) {
-  fastify.log.warn("T3N credentials incomplete — running with MockTEEClient for local development");
-}
+// Always use real TEE client - contracts are deployed
+const teeClient = new TEEClient();
+fastify.log.info("Using TEEClient for secure contract execution");
 
 const llmService = new LLMService(config.LLM_PROVIDER ?? "gemini");
 const orchestrator = new Orchestrator(llmService, teeClient);

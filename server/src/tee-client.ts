@@ -63,7 +63,8 @@ export class TEEClient implements ITeeClient {
   async getMatchingTrials(query: StructuredQuery) {
     await this.ensureInitialized();
 
-    const pharmaVersion = await getScriptVersion(getNodeUrl(), this.pharmaScriptName);
+    // Use the latest deployed contract version
+    const pharmaVersion = "0.1.5";
 
     const criteriaResult = await this.agentClient!.executeAndDecode({
       script_name: this.pharmaScriptName,
@@ -82,7 +83,8 @@ export class TEEClient implements ITeeClient {
   async checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult> {
     await this.ensureInitialized();
 
-    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName) || "0.1.0";
+    // Use the latest deployed contract version
+    const hospitalVersion = "0.1.5";
 
     const result = await this.agentClient!.executeAndDecode({
       script_name: this.hospitalScriptName,
@@ -98,7 +100,8 @@ export class TEEClient implements ITeeClient {
   async getEligibleTrials(patientDid: string): Promise<EligibilityResult[]> {
     await this.ensureInitialized();
 
-    const hospitalVersion = await getScriptVersion(getNodeUrl(), this.hospitalScriptName) || "0.1.0";
+    // Use the latest deployed contract version
+    const hospitalVersion = "0.1.5";
 
     const result = await this.agentClient!.executeAndDecode({
       script_name: this.hospitalScriptName,
@@ -114,7 +117,8 @@ export class TEEClient implements ITeeClient {
   async publishTrial(trialId: string, criteria: unknown): Promise<void> {
     await this.ensureInitialized();
 
-    const pharmaVersion = await getScriptVersion(getNodeUrl(), this.pharmaScriptName) || "0.1.0";
+    // Use the latest deployed contract version (0.1.5 from setup)
+    const pharmaVersion = "0.1.5";
 
     // Add trial_id to criteria object for contract compatibility
     const criteriaWithId = {
@@ -122,36 +126,17 @@ export class TEEClient implements ITeeClient {
       ...criteria as object,
     };
 
+    console.log(`Publishing trial ${trialId} to TEE:`, JSON.stringify(criteriaWithId, null, 2));
+
     await this.agentClient!.execute({
       script_name: this.pharmaScriptName,
       script_version: pharmaVersion,
       function_name: "publish-trial",
       input: { trial_id: trialId, criteria: criteriaWithId },
     });
-  }
-}
-
-// ─── Local mock for development without T3N keys ─────────────────────────────
-
-export class MockTEEClient implements ITeeClient {
-  async getMatchingTrials(query: StructuredQuery) {
-    // Dynamically import trials to avoid circular dependency
-    const { getTrialsStore } = await import("./routes/trials");
-    const trialsStore = getTrialsStore();
-    const allTrials = Array.from(trialsStore.values());
     
-    return allTrials
-      .filter(t => !query.condition || (t.name + t.id + t.indication).toLowerCase().includes(query.condition.toLowerCase()))
-      .map(t => ({ id: t.id, name: t.name, criteria: t.criteria }));
-  }
-
-  async checkEligibility(trialId: string, patientDid: string): Promise<EligibilityResult> {
-    // Mock implementation - not used in production (real TEE client is used)
-    throw new Error("MockTEEClient.checkEligibility: Not implemented. Use real TEEClient for testing.");
-  }
-
-  async getEligibleTrials(patientDid: string): Promise<EligibilityResult[]> {
-    // Mock implementation - not used in production (real TEE client is used)
-    throw new Error("MockTEEClient.getEligibleTrials: Not implemented. Use real TEEClient for testing.");
+    console.log(`✅ Trial ${trialId} published successfully`);
   }
 }
+
+

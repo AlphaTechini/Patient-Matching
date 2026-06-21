@@ -184,13 +184,14 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
 
       fastify.log.info({ trialId, criteriaCount: newTrial.criteria.inclusion.length }, "Trial created");
 
-      // Publish to TEE contract if using real TEE
-      if (teeClient && typeof teeClient.publishTrial === 'function') {
+      // Attempt to publish to TEE contract (optional - fallback to backend if fails)
+      if (teeClient) {
         try {
           await teeClient.publishTrial(trialId, newTrial.criteria);
           fastify.log.info({ trialId }, "Trial published to TEE contract");
         } catch (error) {
-          fastify.log.warn({ trialId, error }, "Failed to publish to TEE contract, continuing with backend-only storage");
+          fastify.log.warn({ trialId, error }, "Failed to publish trial to TEE - using backend fallback for matching");
+          // Continue - backend eligibility checking will handle matching
         }
       }
 

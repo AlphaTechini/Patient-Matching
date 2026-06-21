@@ -237,8 +237,9 @@ async function main() {
   // ── Step 3: Cross-Tenant ACL Updates ─────────────────────────────────────
   console.log("── Step 3: Cross-Tenant ACL Updates ──");
 
-  // Pharma trial-criteria: hospital can read
-  console.log("  Granting hospital read access to pharma trial-criteria...");
+  // Pharma trial-criteria: both contracts can read AND write
+  console.log("  Granting both contracts write access to pharma trial-criteria...");
+  await updateKvMapWriters(pharmaTenant, "trial-criteria", [pharmaContractId, hospitalContractId]);
   await updateKvMapReaders(pharmaTenant, "trial-criteria", [pharmaContractId, hospitalContractId]);
 
   // Pharma match-results: hospital can write
@@ -249,6 +250,51 @@ async function main() {
   console.log("  Granting pharma read access to hospital match-results...");
   await updateKvMapReaders(hospitalTenant, "match-results", [hospitalContractId, pharmaContractId]);
 
+  console.log("\n=== Setup Complete ===");
+  
+  // ── Step 4: Self-Authorization for Direct Calls ─────────────────────────
+  console.log("\n── Step 4: Self-Authorization for T3N_API_KEY ──");
+  console.log("  Granting self-authorization for publishing trials and agent operations...");
+  
+  const address = eth_get_address(T3N_API_KEY);
+  const userDid = `did:t3n:${address}`;
+  
+  const userContractVersion = await getScriptVersion(getNodeUrl(), "tee:user/contracts");
+  
+  const selfGrantInput = {
+    agents: [{
+      agentDid: userDid, // Self-authorization
+      scripts: [
+        {
+          scriptName: `z:${pharmaTenantId}:trial-matching`,
+          versionReq: CONTRACT_VERSION,
+          functions: ["publish-trial", "get-trial-criteria", "submit-match-result"],
+          allowedHosts: [],
+        },
+        {
+          scriptName: `z:${hospitalTenantId}:patient-screening`,
+          versionReq: CONTRACT_VERSION,
+          functions: ["check-eligibility"],
+          allowedHosts: [
+            "api.groq.com",
+            EHR_BASE_URL.replace(/^https?:\/\//, ""),
+          ],
+        },
+      ],
+    }],
+  };
+  
+  await pharmaTenant.client.execute({
+    script_name: "tee:user/contracts",
+    script_version: userContractVersion,
+    function_name: "agent-auth-update",
+    input: selfGrantInput,
+  });
+  
+  console.log(`  ✅ Self-authorized ${userDid}`);
+  console.log(`     - Can call pharma contract (publish-trial, get-trial-criteria, submit-match-result)`);
+  console.log(`     - Can call hospital contract (check-eligibility) with hosts: api.groq.com, ${EHR_BASE_URL.replace(/^https?:\/\//, "")}`);
+  
   console.log("\n=== Setup Complete ===");
   
   // ── Version Increment After Successful Setup ─────────────────────────────

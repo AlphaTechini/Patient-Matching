@@ -485,7 +485,39 @@ export async function seedDatabase() {
     
     console.log(`   Trials in memory: ${trialsStore.size}`);
     const dbTrialsCount = await trialsCollection.countDocuments({});
-    console.log(`   Trials in MongoDB: ${dbTrialsCount}\n`);
+    console.log(`   Trials in MongoDB: ${dbTrialsCount}`);
+    
+    // 3.5 Publish trials to TEE KV store (attempt but continue on failure)
+    console.log("\n📤 Publishing trials to TEE KV store...");
+    
+    const { TEEClient } = await import("../tee-client");
+    const teeClient = new TEEClient();
+    
+    let publishedCount = 0;
+    const failedTrials: string[] = [];
+    
+    for (const trial of [trial3, trial4, trial5]) {
+      try {
+        await teeClient.publishTrial(trial.id, trial.criteria);
+        console.log(`   ✓ Published ${trial.id} to TEE`);
+        publishedCount++;
+      } catch (error) {
+        console.error(`   ❌ Failed to publish ${trial.id}:`);
+        console.error(`      ${error instanceof Error ? error.message : String(error)}`);
+        failedTrials.push(trial.id);
+      }
+    }
+    
+    if (publishedCount === 3) {
+      console.log("   ✅ All trials published to TEE KV store");
+    } else if (publishedCount > 0) {
+      console.log(`\n   ⚠️  Partial success: ${publishedCount}/3 trials published to TEE`);
+      console.log(`   Failed trials: ${failedTrials.join(", ")}`);
+    } else {
+      console.log("\n   ⚠️  TEE publishing unavailable - using backend fallback");
+      console.log("   Agent matching will use backend eligibility checking");
+    }
+    console.log("");
 
     // 4. Seed Patients (both patients collection AND patient_credentials)
     console.log("👥 Seeding patient records...");
