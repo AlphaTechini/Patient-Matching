@@ -7,7 +7,7 @@ RUN corepack enable && corepack prepare pnpm@11 --activate
 # Server is a standalone package (no workspace deps needed)
 COPY pnpm-lock.yaml package.json ./
 
-RUN pnpm install --frozen-lockfile --prod --config.node-linker=hoisted
+RUN pnpm install --prod --config.node-linker=hoisted
 
 # ─── Runtime stage ─────────────────────────────────────────────────
 FROM node:22-slim AS runner
