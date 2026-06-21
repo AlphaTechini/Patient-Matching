@@ -174,7 +174,12 @@ function matchesCriterion(criterion: TrialCriteria, healthRecord: PatientHealthR
     }
 
     case "cardiovascular_risk":
-      return healthRecord.medical_history.some(h => h.includes("cardiovascular"));
+      return healthRecord.medical_history.some(h => 
+        h.includes("cardiovascular") || 
+        h.includes("coronary") || 
+        h.includes("cardio") ||
+        h.includes("hypertension")
+      );
 
     case "nyha_class":
     case "ecog_ps":
