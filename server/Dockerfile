@@ -4,8 +4,7 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@11 --activate
 
-COPY package.json ./
-RUN pnpm approve-builds esbuild@0.28.1
+COPY pnpm-workspace.yaml package.json ./
 
 RUN pnpm install --prod --config.node-linker=hoisted
 
