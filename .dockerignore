@@ -1,0 +1,17 @@
+node_modules
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*.md
+.env
+.env.*
+*.test.ts
+
+# Other workspace packages — source not needed, only manifests
+contracts/target
+Frontend/node_modules
+Frontend/.svelte-kit
+Frontend/build
+Frontend/src
+Frontend/static
