@@ -15,9 +15,6 @@ import { pharmaRoutes } from "./routes/pharma";
 import { accessLogsRoutes } from "./routes/access-logs";
 import { messagesRoutes } from "./routes/messages";
 
-const isDev = process.env.NODE_ENV !== "production";
-
-// Log loaded environment variables for debugging
 console.log("🔍 Environment check:");
 console.log("  - NODE_ENV:", process.env.NODE_ENV || "development");
 console.log("  - WALLET_ENCRYPTION_KEY:", process.env.WALLET_ENCRYPTION_KEY ? "✅ Set" : "❌ Missing");
@@ -27,7 +24,7 @@ console.log("  - LLM_PROVIDER:", process.env.LLM_PROVIDER || "gemini");
 console.log("");
 
 const fastify = Fastify({
-  logger: isDev
+  logger: process.env.NODE_ENV === "development"
     ? {
         transport: {
           target: "pino-pretty",
