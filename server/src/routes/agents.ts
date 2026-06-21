@@ -114,7 +114,7 @@ export async function agentsRoutes(fastify: FastifyInstance, opts: AgentsRoutesO
         const result = await runAgent(agentDid);
 
         return {
-          success: true,
+          success: result.errors && result.errors.length > 0 ? false : true,
           agent: {
             agentDid: result.agentDid,
             trialId: result.trialId,
@@ -122,6 +122,7 @@ export async function agentsRoutes(fastify: FastifyInstance, opts: AgentsRoutesO
           eligiblePatients: result.eligiblePatients,
           summary: result.summary,
           ranAt: result.ranAt,
+          errors: result.errors,
         };
       } catch (error) {
         fastify.log.error(error, "Agent run failed");
@@ -218,6 +219,54 @@ export async function agentsRoutes(fastify: FastifyInstance, opts: AgentsRoutesO
           stats: a.stats,
         })),
       };
+    },
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Re-authorize Agent (for all new patients)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  fastify.post<{ Params: { agentDid: string } }>(
+    "/agents/:agentDid/reauthorize",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["agentDid"],
+          properties: {
+            agentDid: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!useDatabase) {
+        return reply.status(503).send({ error: "Database not configured" });
+      }
+
+      const { agentDid } = request.params;
+
+      fastify.log.info({ agentDid }, "Re-authorizing agent for all patients");
+
+      try {
+        const { authorizeAgentForAllPatients } = await import("../services/agent-deployment");
+        const authorizedCount = await authorizeAgentForAllPatients(agentDid);
+
+        return {
+          success: true,
+          message: `Agent re-authorized for ${authorizedCount} patients`,
+          agentDid,
+          patientsAuthorized: authorizedCount,
+        };
+      } catch (error) {
+        fastify.log.error(error, "Agent re-authorization failed");
+
+        if (error instanceof Error) {
+          return reply.status(500).send({ error: error.message });
+        }
+
+        return reply.status(500).send({ error: "Agent re-authorization failed" });
+      }
     },
   );
 

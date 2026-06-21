@@ -80,7 +80,7 @@ export async function deployAgent(trialId: string, trialName: string, agentName?
   };
 }
 
-async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
+export async function authorizeAgentForAllPatients(agentDid: string): Promise<number> {
   // Get patient credentials to authorize the agent
   const credentialsCollection = getPatientCredentialsCollection();
   const allCredentials = await credentialsCollection.find({}).toArray();
@@ -237,6 +237,11 @@ export interface AgentRunResult {
     averageConfidence: number;
   };
   ranAt: Date;
+  errors?: Array<{
+    patientDid: string;
+    error: string;
+    errorType: string;
+  }>;
 }
 
 export async function runAgent(agentDid: string): Promise<AgentRunResult> {
@@ -302,6 +307,12 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
     totalCriteria: number;
   }> = [];
 
+  const errors: Array<{
+    patientDid: string;
+    error: string;
+    errorType: string;
+  }> = [];
+
   const hospitalTenantDid = process.env.HOSPITAL_TENANT_DID!;
   const hospitalTenantId = hospitalTenantDid.slice("did:t3n:".length);
   const hospitalScriptName = `z:${hospitalTenantId}:patient-screening`;
@@ -345,6 +356,30 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
       );
     } catch (error) {
       console.error(`❌ Failed to check eligibility for ${patientDid}:`, error);
+      
+      // Categorize error type
+      let errorType = "unknown";
+      let errorMessage = "Unknown error";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        if (errorMessage.includes("Forbidden") || errorMessage.includes("not permitted")) {
+          errorType = "authorization";
+        } else if (errorMessage.includes("Invalid") || errorMessage.includes("bad_request")) {
+          errorType = "validation";
+        } else if (errorMessage.includes("timeout") || errorMessage.includes("ETIMEDOUT")) {
+          errorType = "timeout";
+        } else {
+          errorType = "execution";
+        }
+      }
+      
+      errors.push({
+        patientDid,
+        error: errorMessage,
+        errorType,
+      });
       
       // Cache failure as non-eligible to avoid repeated failures
       await cacheMatchResult({
@@ -397,6 +432,10 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
   console.log(`🎉 Agent run complete: ${eligiblePatients.length}/${results.length} eligible`);
   console.log(`   Eligibility rate: ${summary.eligibilityRate}`);
   console.log(`   Average confidence: ${summary.averageConfidence.toFixed(2)}`);
+  
+  if (errors.length > 0) {
+    console.log(`⚠️  Encountered ${errors.length} errors during screening`);
+  }
 
   return {
     agentDid,
@@ -404,6 +443,7 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
     eligiblePatients,
     summary,
     ranAt: new Date(),
+    errors: errors.length > 0 ? errors : undefined,
   };
 }
 
