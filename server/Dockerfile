@@ -21,9 +21,9 @@ WORKDIR /app
 RUN groupadd -r appuser && useradd -r -g appuser -s /sbin/nologin appuser
 
 # Bring in only what the server needs
-COPY --link --from=deps /app/node_modules ./node_modules
-COPY --link server/package.json server/tsconfig.json ./
-COPY --link server/src ./src
+COPY --from=deps /app/node_modules ./node_modules
+COPY server/package.json server/tsconfig.json ./
+COPY server/src ./src
 
 USER appuser
 EXPOSE 3008
