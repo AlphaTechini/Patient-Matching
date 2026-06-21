@@ -11,6 +11,7 @@
 		const path = $page.url.pathname;
 		if (path.includes('/trials')) return 'trials';
 		if (path.includes('/matches')) return 'matches';
+		if (path.includes('/messages')) return 'messages';
 		if (path.includes('/audit')) return 'audit';
 		return 'trials';
 	});

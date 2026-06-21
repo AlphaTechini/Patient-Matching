@@ -1,8 +1,12 @@
 <script lang="ts">
-	let { title = 'Dashboard', showSearch = true } = $props<{
+	let { title = 'Dashboard', showSearch = true, userType, userId } = $props<{
 		title?: string;
 		showSearch?: boolean;
+		userType?: 'pharma' | 'patient';
+		userId?: string;
 	}>();
+
+	const messagesPath = userType === 'pharma' ? '/pharma/messages' : '/messages';
 </script>
 
 <header class="bg-surface/80 backdrop-blur-md border-b border-[var(--color-tm-border)] sticky top-0 right-0 z-40 flex justify-between items-center h-16 px-margin-desktop w-full">
@@ -34,10 +38,19 @@
 			</div>
 		{/if}
 
-		<button class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-high relative">
-			<span class="material-symbols-outlined">notifications</span>
-			<span class="absolute top-1 right-1 w-2 h-2 bg-primary-container rounded-full shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
-		</button>
+		{#if userType && userId}
+			<a 
+				href={messagesPath} 
+				class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-high relative"
+			>
+				<span class="material-symbols-outlined">mail</span>
+				<!-- Notification badge will poll for unread count -->
+				{#await import('./NotificationBadge.svelte') then { default: NotificationBadge }}
+					<NotificationBadge {userType} {userId} />
+				{/await}
+			</a>
+		{/if}
+
 		<button class="p-2 rounded-full text-on-surface-variant hover:text-primary transition-colors hover:bg-surface-container-high">
 			<span class="material-symbols-outlined fill">account_circle</span>
 		</button>

@@ -81,7 +81,7 @@
 	}
 </script>
 
-<TopBar title="Secure Wallet" showSearch={false} />
+<TopBar title="Secure Wallet" showSearch={false} userType="patient" userId={identityStore.patientDid || ''} />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto space-y-stack-lg">
 	

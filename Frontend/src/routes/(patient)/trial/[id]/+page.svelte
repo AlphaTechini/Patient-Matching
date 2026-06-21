@@ -126,7 +126,7 @@
 	);
 </script>
 
-<TopBar title="Trial Detail" />
+<TopBar title="Trial Detail" userType="patient" userId={identityStore.patientDid || ''} />
 
 <div class="bg-[var(--color-tm-surface)] border-b border-[var(--color-tm-border)] sticky top-16 z-30 shadow-sm">
 	<div class="max-w-[1280px] mx-auto px-margin-desktop py-4 flex items-center justify-between">

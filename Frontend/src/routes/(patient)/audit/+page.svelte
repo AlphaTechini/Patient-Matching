@@ -1,10 +1,11 @@
 <script lang="ts">
 	import TopBar from '$lib/components/TopBar.svelte';
+	import { identityStore } from '$lib/stores/identity.svelte';
 	
 	let activeFilter = $state('all');
 </script>
 
-<TopBar title="Audit Log" />
+<TopBar title="Audit Log" userType="patient" userId={identityStore.patientDid || ''} />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto space-y-stack-lg flex flex-col h-[calc(100vh-64px)]">
 	

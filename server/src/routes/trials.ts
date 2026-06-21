@@ -477,6 +477,7 @@ export async function trialsRoutes(fastify: FastifyInstance, opts: TrialsRoutesO
           confidence: result.confidence,
           matchedCriteria: result.matchedCriteria,
           totalCriteria: result.totalCriteria,
+          details: result.details,
           checkedAt: result.checkedAt,
         };
       }).filter(m => m !== null);

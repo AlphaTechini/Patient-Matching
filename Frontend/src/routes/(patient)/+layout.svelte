@@ -13,6 +13,7 @@
 		if (path.includes('/dashboard')) return 'dashboard';
 		if (path.includes('/wallet')) return 'wallet';
 		if (path.includes('/matches') || path.includes('/trial/')) return 'matches';
+		if (path.includes('/messages')) return 'messages';
 		if (path.includes('/permissions')) return 'permissions';
 		if (path.includes('/audit')) return 'audit';
 		return 'dashboard';

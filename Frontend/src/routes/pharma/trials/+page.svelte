@@ -262,7 +262,7 @@
 	}
 </script>
 
-<TopBar title="Published Trials" showSearch={false} />
+<TopBar title="Published Trials" showSearch={false} userType="pharma" userId="TRIAL-2026-003" />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto space-y-stack-lg">
 	
@@ -440,7 +440,10 @@
 												{/if}
 											</button>
 											{#if results}
-												<button class="btn-ghost py-1 px-3 text-sm">View Results</button>
+												<a href="/pharma/matches" class="btn-primary py-1 px-3 text-sm flex items-center gap-1">
+													<span class="material-symbols-outlined text-[16px]">visibility</span>
+													View Results
+												</a>
 											{/if}
 										{/if}
 									</div>
@@ -491,6 +494,13 @@
 																	<span class="text-[var(--color-tm-success)] font-bold">
 																		{(patient.confidence * 100).toFixed(0)}%
 																	</span>
+																	<a 
+																		href={`/pharma/messages?trialId=${trial.id}&patientDid=${patient.patientDid}`}
+																		class="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
+																	>
+																		<span class="material-symbols-outlined text-[14px]">chat</span>
+																		Contact
+																	</a>
 																</div>
 															</div>
 														{/each}

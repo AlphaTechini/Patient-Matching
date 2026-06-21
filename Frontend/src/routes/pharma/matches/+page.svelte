@@ -11,6 +11,7 @@
 		confidence: number;
 		matchedCriteria: number;
 		totalCriteria: number;
+		details?: string;
 		checkedAt: string;
 	}
 
@@ -97,7 +98,7 @@
 	);
 </script>
 
-<TopBar title="Match Results" showSearch={false} />
+<TopBar title="Match Results" showSearch={false} userType="pharma" userId="TRIAL-2026-003" />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto space-y-stack-lg">
 	{#if error}
@@ -218,32 +219,53 @@
 							<div class="p-stack-md">
 								<div class="space-y-2">
 									{#each group.matches as match}
-										<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-3 flex items-center justify-between hover:border-primary/50 transition-colors">
-											<div class="flex items-center gap-3">
-												<div class="w-8 h-8 rounded-full bg-[var(--color-tm-success)]/10 flex items-center justify-center">
-													<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[18px]">person</span>
+										<div class="bg-[var(--color-tm-base)] border border-[var(--color-tm-border)] rounded-lg p-4 hover:border-primary/50 transition-colors">
+											<div class="flex items-start justify-between mb-3">
+												<div class="flex items-center gap-3">
+													<div class="w-8 h-8 rounded-full bg-[var(--color-tm-success)]/10 flex items-center justify-center shrink-0">
+														<span class="material-symbols-outlined text-[var(--color-tm-success)] text-[18px]">person</span>
+													</div>
+													<div>
+														<p class="text-label-md font-mono text-on-surface">{match.patientDid.slice(0, 30)}...</p>
+														<p class="text-label-sm text-on-surface-variant">
+															Matched {match.matchedCriteria}/{match.totalCriteria} criteria
+														</p>
+													</div>
 												</div>
-												<div>
-													<p class="text-label-md font-mono text-on-surface">{match.patientDid.slice(0, 30)}...</p>
-													<p class="text-label-sm text-on-surface-variant">
-														Matched {match.matchedCriteria}/{match.totalCriteria} criteria
-													</p>
+												<div class="flex items-center gap-3">
+													<div class="text-right">
+														<p class="text-label-sm text-on-surface-variant">Confidence</p>
+														<p class="text-headline-md font-bold text-[var(--color-tm-success)]">
+															{(match.confidence * 100).toFixed(0)}%
+														</p>
+													</div>
+													<div class="text-right">
+														<p class="text-label-sm text-on-surface-variant">Checked</p>
+														<p class="text-label-md text-on-surface">
+															{new Date(match.checkedAt).toLocaleDateString()}
+														</p>
+													</div>
+													<a 
+														href={`/pharma/messages?trialId=${match.trialId}&patientDid=${match.patientDid}`}
+														class="btn-primary py-2 px-3 text-sm flex items-center gap-1"
+													>
+														<span class="material-symbols-outlined text-[16px]">chat</span>
+														Contact
+													</a>
 												</div>
 											</div>
-											<div class="flex items-center gap-4">
-												<div class="text-right">
-													<p class="text-label-sm text-on-surface-variant">Confidence</p>
-													<p class="text-headline-md font-bold text-[var(--color-tm-success)]">
-														{(match.confidence * 100).toFixed(0)}%
-													</p>
+											
+											{#if match.details}
+												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3 mt-3">
+													<div class="flex items-start gap-2">
+														<span class="material-symbols-outlined text-primary text-[18px] shrink-0">lightbulb</span>
+														<div>
+															<p class="text-label-sm font-semibold text-on-surface mb-1">AI Summary</p>
+															<p class="text-body-sm text-on-surface-variant leading-relaxed">{match.details}</p>
+														</div>
+													</div>
 												</div>
-												<div class="text-right">
-													<p class="text-label-sm text-on-surface-variant">Checked</p>
-													<p class="text-label-md text-on-surface">
-														{new Date(match.checkedAt).toLocaleDateString()}
-													</p>
-												</div>
-											</div>
+											{/if}
 										</div>
 									{/each}
 								</div>

@@ -1,8 +1,9 @@
 <script lang="ts">
 	import TopBar from '$lib/components/TopBar.svelte';
+	import { identityStore } from '$lib/stores/identity.svelte';
 </script>
 
-<TopBar title="Agent Permissions" />
+<TopBar title="Agent Permissions" userType="patient" userId={identityStore.patientDid || ''} />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto space-y-stack-lg">
 	

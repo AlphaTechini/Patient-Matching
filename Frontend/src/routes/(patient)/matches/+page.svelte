@@ -56,7 +56,7 @@
 	});
 </script>
 
-<TopBar title="Trial Matches" showSearch={false} />
+<TopBar title="Trial Matches" showSearch={false} userType="patient" userId={identityStore.patientDid || ''} />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto">
 	

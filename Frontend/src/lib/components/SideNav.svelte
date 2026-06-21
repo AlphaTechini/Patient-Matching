@@ -23,11 +23,13 @@
 		patient: [
 			{ id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
 			{ id: 'wallet', label: 'Secure Wallet', icon: 'account_balance_wallet', href: '/wallet' },
-			{ id: 'matches', label: 'Trial Matches', icon: 'biotech', href: '/matches' }
+			{ id: 'matches', label: 'Trial Matches', icon: 'biotech', href: '/matches' },
+			{ id: 'messages', label: 'Messages', icon: 'mail', href: '/messages', showBadge: true }
 		],
 		pharma: [
 			{ id: 'trials', label: 'My Trials', icon: 'clinical_notes', href: '/pharma/trials' },
-			{ id: 'matches', label: 'Match Results', icon: 'person_search', href: '/pharma/matches' }
+			{ id: 'matches', label: 'Match Results', icon: 'person_search', href: '/pharma/matches' },
+			{ id: 'messages', label: 'Messages', icon: 'mail', href: '/pharma/messages', showBadge: true }
 		],
 		hospital: [
 			{ id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/hospital/trials' },
@@ -38,9 +40,59 @@
 	};
 
 	const currentNav = navItems[role];
+	
+	// Unread counts state
+	let unreadCounts = $state<Record<string, number>>({});
+	
+	// Fetch unread counts for messages
+	async function fetchUnreadCount() {
+		if (role === 'pharma') {
+			try {
+				const response = await fetch('http://localhost:3008/api/messages/pharma/unread-count?trialId=TRIAL-2026-003');
+				if (response.ok) {
+					const data = await response.json();
+					unreadCounts = { messages: data.unreadCount || 0 };
+				}
+			} catch (err) {
+				console.error('Failed to fetch unread count:', err);
+			}
+		} else if (role === 'patient') {
+			try {
+				const patientDid = identityStore.patientDid;
+				if (!patientDid) return;
+				
+				const response = await fetch(`http://localhost:3008/api/messages/patient/unread-count?patientDid=${patientDid}`);
+				if (response.ok) {
+					const data = await response.json();
+					unreadCounts = { messages: data.unreadCount || 0 };
+				}
+			} catch (err) {
+				console.error('Failed to fetch unread count:', err);
+			}
+		}
+	}
+	
+	// Poll for unread counts every 30 seconds
+	$effect(() => {
+		if (role === 'pharma' || role === 'patient') {
+			fetchUnreadCount();
+			const interval = setInterval(fetchUnreadCount, 30000);
+			return () => clearInterval(interval);
+		}
+	});
 
 	const brandInfo = {
-		patient: { title: 'TrialMatch', subtitle: 'Patient Portal', icon: 'health_and_safety', did: 'did:t3n:p:0x8a...3f21' },
+		patient: { 
+			title: 'TrialMatch', 
+			subtitle: 'Patient Portal', 
+			icon: 'health_and_safety', 
+			get did() { 
+				if (typeof window !== 'undefined') {
+					return identityStore.patientDid || 'did:t3n:...';
+				}
+				return 'did:t3n:...';
+			}
+		},
 		pharma: { 
 			get title() { return pharmaStore.name || 'Pharma Portal'; }, 
 			subtitle: 'TEE Secured Instance', 
@@ -51,6 +103,17 @@
 	};
 
 	const currentBrand = brandInfo[role];
+	
+	function copyDIDToClipboard() {
+		const did = currentBrand.did;
+		if (typeof navigator !== 'undefined' && navigator.clipboard) {
+			navigator.clipboard.writeText(did).then(() => {
+				alert('DID copied to clipboard!');
+			}).catch(() => {
+				alert('Failed to copy DID');
+			});
+		}
+	}
 </script>
 
 <nav class="bg-surface border-r border-[var(--color-tm-border)] h-screen w-64 fixed left-0 top-0 flex flex-col pt-stack-lg pb-4 z-50 inner-glow hidden md:flex">
@@ -68,8 +131,10 @@
 		<div class="px-gutter mb-stack-md">
 			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">Organization</p>
 			<p class="text-body-md text-on-surface font-medium truncate">{currentBrand.orgName}</p>
-			<div class="flex items-center space-x-2 mt-1 cursor-pointer group" onclick={() => alert('DID Copied!')}>
-				<span class="text-mono-data text-outline group-hover:text-primary transition-colors">{currentBrand.did}</span>
+			<div class="flex items-center space-x-2 mt-1 cursor-pointer group" onclick={copyDIDToClipboard}>
+				<span class="text-mono-data text-outline group-hover:text-primary transition-colors truncate">
+					{currentBrand.did}
+				</span>
 				<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">content_copy</span>
 			</div>
 		</div>
@@ -102,12 +167,22 @@
 				<a href={item.href} class="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg text-primary bg-[var(--color-secondary-container)]/10 border-r-2 border-primary opacity-90 transition-all duration-200 mb-1 inner-glow relative overflow-hidden">
 					<div class="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none"></div>
 					<span class="material-symbols-outlined relative z-10 fill">{item.icon}</span>
-					<span class="text-label-md font-semibold relative z-10">{item.label}</span>
+					<span class="text-label-md font-semibold relative z-10 flex-1">{item.label}</span>
+					{#if item.showBadge && unreadCounts[item.id] > 0}
+						<span class="relative z-10 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-5 text-center">
+							{unreadCounts[item.id] > 99 ? '99+' : unreadCounts[item.id]}
+						</span>
+					{/if}
 				</a>
 			{:else}
-				<a href={item.href} class="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors mb-1">
+				<a href={item.href} class="flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors mb-1 relative">
 					<span class="material-symbols-outlined">{item.icon}</span>
-					<span class="text-label-md">{item.label}</span>
+					<span class="text-label-md flex-1">{item.label}</span>
+					{#if item.showBadge && unreadCounts[item.id] > 0}
+						<span class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-5 text-center">
+							{unreadCounts[item.id] > 99 ? '99+' : unreadCounts[item.id]}
+						</span>
+					{/if}
 				</a>
 			{/if}
 		{/each}
@@ -125,8 +200,10 @@
 
 		{#if role === 'patient'}
 			<p class="text-label-sm text-on-surface-variant uppercase tracking-wider mb-2">My Identity</p>
-			<div class="flex items-center gap-2 cursor-pointer group mb-4" onclick={() => alert('DID Copied!')}>
-				<span class="text-mono-data text-outline group-hover:text-primary transition-colors">{currentBrand.did}</span>
+			<div class="flex items-center gap-2 cursor-pointer group mb-4" onclick={copyDIDToClipboard}>
+				<span class="text-mono-data text-outline group-hover:text-primary transition-colors truncate">
+					{currentBrand.did}
+				</span>
 				<span class="material-symbols-outlined text-[14px] text-outline group-hover:text-primary transition-colors">content_copy</span>
 			</div>
 		{/if}

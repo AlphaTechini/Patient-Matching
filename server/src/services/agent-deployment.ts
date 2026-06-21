@@ -312,6 +312,10 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
 
   // Import backend eligibility checker
   const { checkEligibility } = await import("./eligibility-checker");
+  
+  // Import LLM service for AI summaries
+  const { LLMService } = await import("../llm");
+  const llmService = new LLMService(process.env.LLM_PROVIDER || "groq");
 
   for (const patient of allPatients) {
     const patientDid = patient.patientDid;
@@ -319,6 +323,43 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
     try {
       // Use backend eligibility checking (bypasses TEE)
       const eligibility = checkEligibility(trial, patient.healthRecord);
+      
+      // Generate AI summary only for eligible patients
+      let aiSummary = "";
+      if (eligibility.eligible) {
+        try {
+          const summaryPrompt = `Analyze this patient's eligibility for the trial "${trial.name}".
+
+Patient matched ${eligibility.matched_criteria}/${eligibility.total_criteria} criteria with ${(eligibility.confidence * 100).toFixed(0)}% confidence.
+
+Trial Inclusion Criteria:
+${trial.criteria.inclusion.map((c: any, i: number) => `${i + 1}. ${c.description || `${c.field}: ${c.expected}`}`).join('\n')}
+
+Trial Exclusion Criteria:
+${trial.criteria.exclusion.map((c: any, i: number) => `${i + 1}. ${c.description || `${c.field}: ${c.expected}`}`).join('\n')}
+
+Patient Demographics:
+- Age: ${patient.healthRecord.demographics.age}
+- Gender: ${patient.healthRecord.demographics.gender}
+- BMI: ${patient.healthRecord.vitals.bmi}
+
+Patient Conditions:
+${patient.healthRecord.diagnosis_codes.join(', ')}
+
+Medications:
+${patient.healthRecord.medications.join(', ')}
+
+Lab Results:
+${JSON.stringify(patient.healthRecord.lab_results, null, 2)}
+
+Provide a brief 2-3 sentence summary explaining why this patient is a good match for the trial. Focus on the key matching criteria.`;
+
+          aiSummary = await llmService.provider.generate(summaryPrompt) as string;
+        } catch (error) {
+          console.warn(`Failed to generate AI summary for ${patientDid}:`, error);
+          aiSummary = "AI summary generation failed";
+        }
+      }
 
       results.push({
         patientDid,
@@ -336,6 +377,7 @@ export async function runAgent(agentDid: string): Promise<AgentRunResult> {
         confidence: eligibility.confidence,
         matchedCriteria: eligibility.matched_criteria,
         totalCriteria: eligibility.total_criteria,
+        details: aiSummary || undefined,
       });
 
       console.log(

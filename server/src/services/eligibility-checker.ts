@@ -99,8 +99,7 @@ function matchesCriterion(criterion: TrialCriteria, healthRecord: PatientHealthR
       const age = healthRecord.demographics.age;
       if (expected.includes("-")) {
         const [min, max] = expected.split("-").map(Number);
-        if (min === undefined || max === undefined) return false;
-        return age >= min && age <= max;
+        return age >= (min ?? 0) && age <= (max ?? 999);
       }
       return age >= parseInt(expected);
     }
@@ -112,8 +111,7 @@ function matchesCriterion(criterion: TrialCriteria, healthRecord: PatientHealthR
       const bmi = healthRecord.vitals.bmi;
       if (expected.includes("-")) {
         const [min, max] = expected.split("-").map(Number);
-        if (min === undefined || max === undefined) return false;
-        return bmi >= min && bmi <= max;
+        return bmi >= (min ?? 0) && bmi <= (max ?? 999);
       }
       return bmi >= parseFloat(expected);
     }
@@ -123,8 +121,7 @@ function matchesCriterion(criterion: TrialCriteria, healthRecord: PatientHealthR
       if (expected.startsWith("<")) {
         const [maxSys, maxDia] = expected.slice(1).split("/").map(Number);
         const [sys, dia] = bp.split("/").map(Number);
-        if (maxSys === undefined || maxDia === undefined || sys === undefined || dia === undefined) return false;
-        return sys < maxSys && dia < maxDia;
+        return (sys ?? 999) < (maxSys ?? 0) && (dia ?? 999) < (maxDia ?? 0);
       }
       return true;
     }
@@ -157,8 +154,7 @@ function matchesCriterion(criterion: TrialCriteria, healthRecord: PatientHealthR
 
       if (expected.includes("-")) {
         const [min, max] = expected.split("-").map(Number);
-        if (min === undefined || max === undefined) return false;
-        return value >= min && value <= max;
+        return value >= (min ?? 0) && value <= (max ?? 999999);
       }
       if (expected.startsWith(">")) {
         return value > parseFloat(expected.slice(1));

@@ -80,7 +80,7 @@
 	}
 </script>
 
-<TopBar title="Dashboard" showSearch={false} />
+<TopBar title="Dashboard" showSearch={false} userType="patient" userId={identityStore.patientDid || ''} />
 
 <main class="flex-1 p-margin-desktop max-w-[1280px] w-full mx-auto">
 	<!-- Active Matches Card -->
