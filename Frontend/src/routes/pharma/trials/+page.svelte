@@ -37,6 +37,7 @@
 			confidence: number;
 			matchedCriteria: number;
 			totalCriteria: number;
+			details?: string;
 		}>;
 		summary: {
 			screened: number;
@@ -189,10 +190,29 @@
 			const data = await response.json();
 			console.log('Agent run complete:', data);
 
+			// Fetch full match details (including AI summaries) to enrich results
+			let enrichedPatients = data.eligiblePatients;
+			try {
+				const matchesRes = await fetch(`${API_BASE}/api/pharma/matches`);
+				if (matchesRes.ok) {
+					const matchesData = await matchesRes.json();
+					const detailsMap = new Map<string, string>();
+					for (const m of matchesData.matches || []) {
+						if (m.trialId === trialId && m.details) {
+							detailsMap.set(m.patientDid, m.details);
+						}
+					}
+					enrichedPatients = data.eligiblePatients.map((p: any) => ({
+						...p,
+						details: detailsMap.get(p.patientDid),
+					}));
+				}
+			} catch (_) { /* non-critical — proceed without details */ }
+
 			// Store results
 			const updatedResults = new Map(agentResults);
 			updatedResults.set(trialId, {
-				eligiblePatients: data.eligiblePatients,
+				eligiblePatients: enrichedPatients,
 				summary: data.summary,
 				ranAt: data.ranAt
 			});
@@ -485,24 +505,29 @@
 												<div class="bg-[var(--color-tm-surface)] border border-[var(--color-tm-border)] rounded-lg p-3">
 													<p class="text-sm font-medium text-on-surface mb-2">Eligible Patients</p>
 													<div class="space-y-2 max-h-40 overflow-y-auto">
-														{#each results.eligiblePatients as patient}
-															<div class="flex items-center justify-between text-sm bg-[var(--color-tm-base)] rounded p-2">
-																<span class="font-mono text-on-surface-variant">{patient.patientDid.slice(0, 20)}...</span>
-																<div class="flex items-center gap-3">
-																	<span class="text-on-surface-variant">
-																		{patient.matchedCriteria}/{patient.totalCriteria} criteria
-																	</span>
-																	<span class="text-[var(--color-tm-success)] font-bold">
-																		{(patient.confidence * 100).toFixed(0)}%
-																	</span>
-																	<a 
-																		href={`/pharma/messages?trialId=${trial.id}&patientDid=${patient.patientDid}`}
-																		class="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
-																	>
-																		<span class="material-symbols-outlined text-[14px]">chat</span>
-																		Contact
-																	</a>
+															{#each results.eligiblePatients as patient}
+															<div class="text-sm bg-[var(--color-tm-base)] rounded p-3 space-y-2">
+																<div class="flex items-center justify-between">
+																	<span class="font-mono text-on-surface-variant">{patient.patientDid.slice(0, 20)}...</span>
+																	<div class="flex items-center gap-3">
+																		<span class="text-on-surface-variant">
+																			{patient.matchedCriteria}/{patient.totalCriteria} criteria
+																		</span>
+																		<span class="text-[var(--color-tm-success)] font-bold">
+																			{(patient.confidence * 100).toFixed(0)}%
+																		</span>
+																		<a 
+																			href={`/pharma/messages?trialId=${trial.id}&patientDid=${patient.patientDid}`}
+																			class="btn-ghost py-1 px-2 text-xs flex items-center gap-1"
+																		>
+																			<span class="material-symbols-outlined text-[14px]">chat</span>
+																			Contact
+																		</a>
+																	</div>
 																</div>
+																{#if patient.details}
+																	<p class="text-xs text-on-surface-variant leading-relaxed border-t border-[var(--color-tm-border)] pt-2 mt-1">{patient.details}</p>
+																{/if}
 															</div>
 														{/each}
 													</div>
