@@ -82,7 +82,7 @@
 			isLoading = true;
 			error = '';
 
-			const response = await fetch('${API_BASE}/api/trials/all');
+			const response = await fetch(`${API_BASE}/api/trials/all`);
 			if (!response.ok) throw new Error('Failed to fetch trials');
 
 			const data = await response.json();
