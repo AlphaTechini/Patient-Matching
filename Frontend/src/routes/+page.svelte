@@ -12,11 +12,7 @@
 			<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[var(--color-tm-cyan)]/10 via-[var(--color-tm-base)] to-[var(--color-tm-base)] opacity-50"></div>
 			
 			<div class="relative z-10 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop text-center mt-[-10vh]">
-				<div class="inline-flex items-center space-x-2 bg-surface-container border border-[var(--color-tm-border)] rounded-full px-4 py-1.5 mb-8 inner-glow">
-					<span class="w-2 h-2 rounded-full bg-[var(--color-tm-success)] animate-pulse-slow"></span>
-					<span class="text-label-sm text-on-surface-variant font-mono-data tracking-wide uppercase">TEE Network Live &bull; 14 Nodes</span>
-				</div>
-				
+	
 				<h1 class="text-display-xl md:text-[72px] font-bold text-on-surface mb-6 leading-tight tracking-tight text-glow max-w-4xl mx-auto">
 					Zero-Knowledge.<br />
 					<span class="text-primary">100% Clinical Match.</span>
