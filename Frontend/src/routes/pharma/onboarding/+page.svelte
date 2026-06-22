@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { API_BASE } from '$lib/config';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import { pharmaStore } from '$lib/stores/pharma.svelte';
 
@@ -30,8 +31,8 @@
 			error = '';
 
 			const endpoint = mode === 'register' 
-				? 'http://localhost:3008/api/pharma/register'
-				: 'http://localhost:3008/api/pharma/login';
+				? `${API_BASE}/api/pharma/register`
+				: `${API_BASE}/api/pharma/login`;
 
 			const body = mode === 'register'
 				? { name: pharmaName, did: pharmaDid }

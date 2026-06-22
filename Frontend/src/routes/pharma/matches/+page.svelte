@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { API_BASE } from '$lib/config';
 	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 
@@ -40,7 +41,7 @@
 			isLoading = true;
 			error = '';
 
-			const response = await fetch('http://localhost:3008/api/pharma/matches');
+			const response = await fetch(`${API_BASE}/api/pharma/matches`);
 			if (!response.ok) throw new Error('Failed to fetch match results');
 
 			const data = await response.json();

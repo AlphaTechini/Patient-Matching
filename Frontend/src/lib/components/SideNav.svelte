@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { API_BASE } from '$lib/config';
 	import { pharmaStore } from '$lib/stores/pharma.svelte';
 	import { identityStore } from '$lib/stores/identity.svelte';
 
@@ -48,7 +49,7 @@
 	async function fetchUnreadCount() {
 		if (role === 'pharma') {
 			try {
-				const response = await fetch('http://localhost:3008/api/messages/pharma/unread-count?trialId=TRIAL-2026-003');
+				const response = await fetch(`${API_BASE}/api/messages/pharma/unread-count?trialId=TRIAL-2026-003`);
 				if (response.ok) {
 					const data = await response.json();
 					unreadCounts = { messages: data.unreadCount || 0 };
@@ -61,7 +62,7 @@
 				const patientDid = identityStore.patientDid;
 				if (!patientDid) return;
 				
-				const response = await fetch(`http://localhost:3008/api/messages/patient/unread-count?patientDid=${patientDid}`);
+				const response = await fetch(`${API_BASE}/api/messages/patient/unread-count?patientDid=${patientDid}`);
 				if (response.ok) {
 					const data = await response.json();
 					unreadCounts = { messages: data.unreadCount || 0 };

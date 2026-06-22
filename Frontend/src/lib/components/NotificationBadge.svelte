@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { API_BASE } from '$lib/config';
 	import { onMount, onDestroy } from 'svelte';
 	import { page } from '$app/stores';
 	import { identityStore } from '$lib/stores/identity.svelte';
@@ -33,7 +34,7 @@
 				endpoint = `/api/messages/patient/unread-count?patientDid=${patientDid}`;
 			}
 
-			const response = await fetch(`http://localhost:3008${endpoint}`);
+			const response = await fetch(`${API_BASE}${endpoint}`);
 			if (!response.ok) return;
 
 			const data = await response.json();

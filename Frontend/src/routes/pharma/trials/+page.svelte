@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { API_BASE } from '$lib/config';
 	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
@@ -81,7 +82,7 @@
 			isLoading = true;
 			error = '';
 
-			const response = await fetch('http://localhost:3008/api/trials/all');
+			const response = await fetch('${API_BASE}/api/trials/all');
 			if (!response.ok) throw new Error('Failed to fetch trials');
 
 			const data = await response.json();
@@ -101,7 +102,7 @@
 
 	async function fetchAgentsForTrial(trialId: string) {
 		try {
-			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/agents`);
+			const response = await fetch(`${API_BASE}/api/trials/${trialId}/agents`);
 			if (!response.ok) return;
 
 			const data = await response.json();
@@ -122,7 +123,7 @@
 			deploymentMessage = 'Creating agent identity...';
 			error = '';
 
-			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/deploy-agent`, {
+			const response = await fetch(`${API_BASE}/api/trials/${trialId}/deploy-agent`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ agentName: `${trialName} Agent` })
@@ -176,7 +177,7 @@
 			runProgress = { current: 0, total: 0 };
 			error = '';
 
-			const response = await fetch(`http://localhost:3008/api/agents/${agentDid}/run`, {
+			const response = await fetch(`${API_BASE}/api/agents/${agentDid}/run`, {
 				method: 'POST'
 			});
 

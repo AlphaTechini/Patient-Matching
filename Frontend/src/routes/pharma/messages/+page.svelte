@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { API_BASE } from '$lib/config';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import TopBar from '$lib/components/TopBar.svelte';
@@ -73,7 +74,7 @@
 
 	async function fetchConversations() {
 		try {
-			const response = await fetch(`http://localhost:3008/api/messages/pharma/conversations?trialId=${TRIAL_ID}`);
+			const response = await fetch(`${API_BASE}/api/messages/pharma/conversations?trialId=${TRIAL_ID}`);
 			if (!response.ok) throw new Error('Failed to fetch conversations');
 
 			const data = await response.json();
@@ -95,7 +96,7 @@
 
 	async function fetchMessages(trialId: string, patientDid: string) {
 		try {
-			const response = await fetch(`http://localhost:3008/api/messages/conversation?trialId=${trialId}&patientDid=${patientDid}`);
+			const response = await fetch(`${API_BASE}/api/messages/conversation?trialId=${trialId}&patientDid=${patientDid}`);
 			if (!response.ok) throw new Error('Failed to fetch messages');
 
 			const data = await response.json();
@@ -107,7 +108,7 @@
 
 	async function markAsRead(trialId: string, patientDid: string) {
 		try {
-			await fetch('http://localhost:3008/api/messages/mark-read', {
+			await fetch(`${API_BASE}/api/messages/mark-read`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ trialId, patientDid, readerType: 'pharma' })
@@ -127,7 +128,7 @@
 		try {
 			isSending = true;
 
-			const response = await fetch('http://localhost:3008/api/messages/send', {
+			const response = await fetch(`${API_BASE}/api/messages/send`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { API_BASE } from '$lib/config';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import TopBar from '$lib/components/TopBar.svelte';
@@ -57,7 +58,7 @@
 			isLoadingTrial = true;
 			error = '';
 
-			const response = await fetch(`http://localhost:3008/api/trials/${trialId}`);
+			const response = await fetch(`${API_BASE}/api/trials/${trialId}`);
 			if (!response.ok) throw new Error('Trial not found');
 
 			const data = await response.json();
@@ -85,7 +86,7 @@
 			checkMessage = 'Processing your health records in TEE...';
 			error = '';
 
-			const response = await fetch(`http://localhost:3008/api/trials/${trialId}/check-eligibility`, {
+			const response = await fetch(`${API_BASE}/api/trials/${trialId}/check-eligibility`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ patientDid: identityStore.did })
