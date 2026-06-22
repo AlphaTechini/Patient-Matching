@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { API_BASE } from '$lib/config';
+	import { renderMarkdown } from '$lib/markdown';
 	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 
@@ -262,7 +263,7 @@
 														<span class="material-symbols-outlined text-primary text-[18px] shrink-0">lightbulb</span>
 														<div>
 															<p class="text-label-sm font-semibold text-on-surface mb-1">AI Summary</p>
-															<p class="text-body-sm text-on-surface-variant leading-relaxed">{match.details}</p>
+															<p class="text-body-sm text-on-surface-variant leading-relaxed">{@html renderMarkdown(match.details)}</p>
 														</div>
 													</div>
 												</div>

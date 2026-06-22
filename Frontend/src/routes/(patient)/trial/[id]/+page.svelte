@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { API_BASE } from '$lib/config';
+	import { renderMarkdown } from '$lib/markdown';
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import TopBar from '$lib/components/TopBar.svelte';
@@ -284,7 +285,7 @@
 									<span class="material-symbols-outlined text-[18px]">psychology</span>
 									AI Analysis
 								</h4>
-								<p class="text-sm text-on-surface-variant">{eligibility.details}</p>
+								<p class="text-sm text-on-surface-variant">{@html renderMarkdown(eligibility.details)}</p>
 							</div>
 						{/if}
 					</div>

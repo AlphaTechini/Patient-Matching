@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { API_BASE } from '$lib/config';
+	import { renderMarkdown } from '$lib/markdown';
 	import { onMount } from 'svelte';
 	import TopBar from '$lib/components/TopBar.svelte';
 	import StatusChip from '$lib/components/StatusChip.svelte';
@@ -526,7 +527,7 @@
 																	</div>
 																</div>
 																{#if patient.details}
-																	<p class="text-xs text-on-surface-variant leading-relaxed border-t border-[var(--color-tm-border)] pt-2 mt-1">{patient.details}</p>
+																	<p class="text-xs text-on-surface-variant leading-relaxed border-t border-[var(--color-tm-border)] pt-2 mt-1">{@html renderMarkdown(patient.details)}</p>
 																{/if}
 															</div>
 														{/each}
